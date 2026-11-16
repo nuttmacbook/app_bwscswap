@@ -1,0 +1,30 @@
+{
+    "name": "deploy-kit",
+    "private": true,
+    "type": "module",
+    "description": "Programs you deploy yourself (bwsc/ in the explorer, bsc/ in Remix) and temporary test tools. The website never uses this folder: delete it once the addresses are in settings/config.js.",
+    "scripts": {
+        "dev": "node engine/start.mjs",
+        "dev:mock": "node engine/start.mjs --mock",
+        "compile": "node engine/compile.mjs",
+        "compile:watch": "node engine/compile.mjs --watch",
+        "test": "node engine/test-runner.mjs",
+        "test:only": "node engine/test-runner.mjs --only",
+        "test:mock": "node engine/test-runner.mjs --mock",
+        "test:app": "node engine/app-test.mjs --mock",
+        "test:app:real": "node engine/app-test.mjs",
+        "compile:bsc": "node engine/bsc/compiler.mjs"
+    },
+    "engines": {
+        "node": ">=22.0.0 <23"
+    },
+    "devDependencies": {
+        "bwscbox": "file:../vendor/bwscbox",
+        "ethers": "6.17.0",
+        "playwright": "^1.56.1",
+        "solc": "0.8.37"
+    },
+    "optionalDependencies": {
+        "programvm": "github:nuttmacbook/cluade_cardianal_server#ad98bc4646e8764848b18ec24e38e501c02b4f93"
+    }
+}

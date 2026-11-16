@@ -1,0 +1,12 @@
+# src/engine/ 🔧 ระบบ (ไม่ต้องแก้)
+- `chain/` (on-chain)
+  - `connect`: node ผ่าน bwscbox + หน้าต่างกระเป๋า
+  - `reown`: เชื่อมกระเป๋าด้วย Reown AppKit อย่างเดียว เซ็น EIP-712 และส่ง provider ให้ขั้นของ bridge บน BSC (เชนจำลองของ deploy-kit ใช้หน้าต่างของ bwscbox แทน เพื่อให้เทสคุมกระเป๋าจำลองได้)
+  - `token`: approveIfNeeded
+  - `cache`
+  - `rpcMeter`: นับ read ต่อหน้า
+  - `txError`
+- `ui/` (off-chain)
+  - `app`: วาดหน้า, รัน tx, หน้า "Setup is not finished"
+  - `helpers`: format ตัวเลขและ address, ลิงก์ explorer
+- `settings.js`: อ่านและตรวจ `settings/config.js` (เชนจำลองส่ง `VITE_CONFIG` มาทับได้) แล้ว export `config`, `settings`, `problems`

@@ -1,0 +1,32 @@
+{
+    "name": "bwscbox",
+    "version": "0.1.0",
+    "description": "kitbox for BWSC (Program VM) chains: connect wallets, sign EIP-712 transactions, call and read JavaScript programs",
+    "type": "module",
+    "main": "./src/index.js",
+    "module": "./src/index.js",
+    "exports": {
+        ".": "./src/index.js",
+        "./client": "./src/client.js",
+        "./typedData": "./src/typedData.js",
+        "./values": "./src/values.js",
+        "./signers": "./src/signers.js"
+    },
+    "files": [
+        "src",
+        "README.md"
+    ],
+    "sideEffects": false,
+    "keywords": [
+        "bwsc",
+        "programvm",
+        "web3",
+        "wallet",
+        "eip-712",
+        "eip-6963"
+    ],
+    "license": "MIT",
+    "engines": {
+        "node": ">=18"
+    }
+}

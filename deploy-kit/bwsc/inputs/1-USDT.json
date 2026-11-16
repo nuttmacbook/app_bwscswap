@@ -1,0 +1,7 @@
+{
+  "name": "Tether USD",
+  "ticker": "USDT",
+  "decimals": "18n",
+  "supply": "1000000000000000000000000000n",
+  "description": "USDT on BWSC: paid out by the bridge for BSC-USD locked on BSC"
+}

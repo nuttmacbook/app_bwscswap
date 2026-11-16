@@ -1,0 +1,4 @@
+{
+    "// how it works": "Tokens that already exist on the real chain (like a stable coin) but not on the local one. npm run dev / npm test deploy a standard token for each and put its address in the program settings listed under replaces (\"Program.KEY\"). supply is in whole tokens. Empty list = none.",
+    "tokens": []
+}

@@ -1,0 +1,7 @@
+{
+    "// how it works": "Tokens deployed on the local BSC (anvil) for npm run dev / npm test, in place of the real BSC tokens. Their addresses replace the settings listed under replaces (\"File.KEY\": BwscBridgeEvm = deploy-kit/settings/bsc/BwscBridgeEvm.env, BwscBridge = deploy-kit/settings/programs/BwscBridge.env). supply (whole tokens) goes to the deployer.",
+    "tokens": [
+        { "symbol": "tBWSC", "name": "BWSC (BEP-20, test)", "decimals": 18, "supply": 100000000, "replaces": [ "BwscBridgeEvm.NATIVE_TOKEN", "BwscBridge.PAIR_NATIVE" ] },
+        { "symbol": "USDT", "name": "BSC-USD (test)", "decimals": 18, "supply": 100000000, "replaces": [ "BwscBridgeEvm.USDT_TOKEN", "BwscBridge.PAIR_USDT" ] }
+    ]
+}

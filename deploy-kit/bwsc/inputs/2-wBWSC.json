@@ -1,0 +1,5 @@
+{
+  "name": "Wrapped BWSC",
+  "ticker": "wBWSC",
+  "description": "wBWSC: BWSC as a token, 1 : 1. deposit wraps, withdraw unwraps. No owner."
+}

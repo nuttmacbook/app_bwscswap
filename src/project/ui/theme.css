@@ -1,0 +1,41 @@
+/*
+ * YOUR CODE (off-chain). The website's colors in one place: black with blue.
+ * Change a value here and every page follows (Tailwind classes bg-ink-*, text-brand-*, … and the effects in main.css).
+ *
+ *   ink    the page, cards and lines (blue-black)
+ *   brand  buttons, links, highlights (blue)
+ *   mint   good news only (confirmed, live, arrived)
+ */
+
+@theme {
+    /* Type: Inter for text, JetBrains Mono for code and addresses (index.html loads both) */
+    --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+    --color-ink-950: #04060b;
+    --color-ink-900: #080c15;
+    --color-ink-850: #0c121e;
+    --color-ink-800: #121a29;
+    --color-ink-700: #1d2840;
+
+    --color-brand-200: #cfe2ff;
+    --color-brand-300: #9cc6ff;
+    --color-brand-400: #5ea6ff;
+    --color-brand-500: #3b82f6;
+    --color-brand-600: #2563eb;
+    --color-brand-700: #1d4ed8;
+
+    --color-mint-300: #8ef0c4;
+    --color-mint-400: #4fdca0;
+}
+
+:root {
+    /* Light behind the page (top left blue, top right cyan) */
+    --glow-main: rgb(59 130 246 / 0.17);
+    --glow-side: rgb(34 211 238 / 0.07);
+    /* Card fill and its top highlight */
+    --surface-fill: rgb(8 12 21 / 0.92);
+    --surface-line: rgb(148 180 255 / 0.09);
+    /* Primary button text */
+    --button-text: #ffffff;
+}

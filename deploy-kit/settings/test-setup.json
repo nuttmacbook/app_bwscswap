@@ -1,0 +1,21 @@
+{
+    "// how it works": "TEST CHAIN ONLY: what npm run dev and the app tests set up after deploying. Coins: native = the chain's coin, otherwise a key of deploy.config.mjs (USDT, WBWSC). Amounts in whole coins. Your real chain: deploy-kit/README.md step 9.",
+    "pairs": [
+        { "tokenA": "native", "tokenB": "USDT", "amountA": 100000, "amountB": 85000 }
+    ],
+    "stakePools": [
+        { "id": "bwsc-usdt", "stake": "native", "reward": "USDT" },
+        { "id": "usdt-usdt", "stake": "USDT", "reward": "USDT" },
+        { "id": "usdt-bwsc", "stake": "USDT", "reward": "native" }
+    ],
+    "// limitOrders": "Open limit orders the owner places (give amount of give, ask want amount of want). Rates near the pool price, some better, some worse.",
+    "limitOrders": [
+        { "give": "native", "giveAmount": 100, "want": "USDT", "wantAmount": 84 },
+        { "give": "native", "giveAmount": 50, "want": "USDT", "wantAmount": 43 },
+        { "give": "native", "giveAmount": 250, "want": "USDT", "wantAmount": 225, "partial": false },
+        { "give": "native", "giveAmount": 20, "want": "USDT", "wantAmount": 16.5 },
+        { "give": "USDT", "giveAmount": 100, "want": "native", "wantAmount": 115 },
+        { "give": "USDT", "giveAmount": 500, "want": "native", "wantAmount": 600 },
+        { "give": "WBWSC", "giveAmount": 10, "want": "USDT", "wantAmount": 8.6 }
+    ]
+}

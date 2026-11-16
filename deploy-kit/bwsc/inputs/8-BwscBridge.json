@@ -1,0 +1,21 @@
+{
+  "owner": "<YOUR_WALLET>",
+  "signer": "<SIGNER_ADDRESS>",
+  "routes": [
+    {
+      "chainId": "56n",
+      "token": "0x0000000000000000000000000000000000000000",
+      "remoteToken": "<BWSC_ON_BSC_ADDRESS>",
+      "feeBps": "10n",
+      "min": "1000000000000000000n"
+    },
+    {
+      "chainId": "56n",
+      "token": "<USDT_ON_BWSC_ADDRESS>",
+      "remoteToken": "0x55d398326f99059fF775485246999027B3197955",
+      "feeBps": "10n",
+      "min": "5000000000000000000n"
+    }
+  ],
+  "description": "BWSC bridge hub: lock and release, running totals, claims signed by the bridge signer"
+}

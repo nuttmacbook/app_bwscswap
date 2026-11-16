@@ -1,0 +1,9 @@
+{
+  "owner": "<YOUR_WALLET>",
+  "coins": [
+    { "token": "0x0000000000000000000000000000000000000000", "feeBps": "10n" },
+    { "token": "<USDT_ON_BWSC_ADDRESS>", "feeBps": "10n" },
+    { "token": "<wBWSC_ADDRESS>", "feeBps": "10n" }
+  ],
+  "description": "BWSC limit orders: put up one coin for another at your price; anyone can fill it"
+}

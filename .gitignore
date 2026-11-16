@@ -1,0 +1,11 @@
+node_modules/
+dist/
+settings/.env
+deploy-kit/node_modules/
+deploy-kit/generated/node.log
+deploy-kit/generated/genesis-*.json
+deploy-kit/generated/bsc-build/
+bridge-signer/.env
+bridge-signer/node_modules/
+bridge-signer/relayer-state.json
+bridge-signer/relayer-state.json.tmp

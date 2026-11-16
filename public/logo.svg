@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#111c33"/><stop offset="1" stop-color="#04060b"/></linearGradient>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfe2ff"/><stop offset=".55" stop-color="#5ea6ff"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
+    <linearGradient id="cyan" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0ea5c6"/><stop offset="1" stop-color="#a5f3fc"/></linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
+  <rect x=".75" y=".75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#5ea6ff" stroke-opacity=".3" stroke-width="1.5"/>
+  <!-- Two arcs chasing each other: one swap, both ways -->
+  <path d="M17 29a15 15 0 0 1 25.6-9.6" fill="none" stroke="url(#blue)" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M44.4 14.6l-1.2 6.9-6.9-1.2" fill="none" stroke="url(#blue)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M47 35a15 15 0 0 1-25.6 9.6" fill="none" stroke="url(#cyan)" stroke-width="5.5" stroke-linecap="round"/>
+  <path d="M19.6 49.4l1.2-6.9 6.9 1.2" fill="none" stroke="url(#cyan)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

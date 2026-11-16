@@ -1,0 +1,7 @@
+{
+  "owner": "<YOUR_WALLET>",
+  "wrapped": "<wBWSC_ADDRESS>",
+  "defaultFeeBps": "30n",
+  "openPairs": false,
+  "description": "BWSC exchange: every pair in one program, constant product, fees to liquidity providers"
+}

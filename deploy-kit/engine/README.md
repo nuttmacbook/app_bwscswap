@@ -1,0 +1,12 @@
+# deploy-kit/engine/ 🔧 — เครื่องมือของเชนจำลอง (ไม่ต้องแก้)
+- compile.mjs — ตรวจ `bwsc/*.js` ด้วยกฎของ node (autoreview + VM) → `generated/build/`
+- bsc/compiler.mjs — คอมไพล์ `bsc/*.sol` (solc 0.8.37) + เช็ก ABI ของเว็บ · bsc/anvil.mjs, local.mjs, deploy.mjs — BSC จำลอง (anvil)
+- settings.mjs — อ่าน `deploy-kit/settings` (ไม่มีค่าสำรองในโค้ด)
+- deploy-steps.mjs — `program()` / `token()` ให้ deploy.config สั้น (รองรับ `build`, `asToken`) + deploy → init → readBack (เชนจำลองเท่านั้น)
+- local-chain.mjs — ดีพลอยทุกอย่างตาม deploy.config บนเชนจำลอง
+- node.mjs, start.mjs — node จริงของเชน (programvm server.js, in-memory) + เปิดเว็บ (`npm run dev`)
+- test-runner.mjs — รันทุกไฟล์ใน `project/test` (`npm test`) เชนใหม่ทุกไฟล์
+- app-test.mjs — เทสทั้งแอปในเบราว์เซอร์ (`npm run test:app`, `test:app:real`)
+- web/ — แผงทดสอบ (demo wallet, +gas, +token) โหลดเฉพาะบนเชนจำลอง
+- mock/server.mjs — mock node: รันโปรแกรมของคุณ ตอบ API เดียวกับ node จริง (`--mock`)
+- contracts/MockToken.sol — เหรียญทดสอบบน BSC จำลอง (ใครก็ mint ได้)

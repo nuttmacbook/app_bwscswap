@@ -1,0 +1,25 @@
+{
+    "name": "bwsc-swap",
+    "private": true,
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "@reown/appkit": "^1.8.11",
+        "@reown/appkit-adapter-ethers": "^1.8.11",
+        "bwscbox": "file:./vendor/bwscbox",
+        "ethers": "6.17.0"
+    },
+    "devDependencies": {
+        "@tailwindcss/vite": "^4.1.0",
+        "tailwindcss": "^4.1.0",
+        "vite": "^6.3.0"
+    },
+    "overrides": {
+        "zod": "^4.6.6"
+    }
+}
