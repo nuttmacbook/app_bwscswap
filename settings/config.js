@@ -26,15 +26,17 @@ export default {
         nodeUrl: "https://syncblock.network",
         explorerUrl: "https://syncblock.network",
         // The chain's own coin (as the node's GET /evm reports it)
-        native: { symbol: "BWSC", name: "Bluewolfchain", decimals: 18 },
+        native: { symbol: "BWSC", name: "Bluewolfchain", decimals: 18, logo: "/coins/bwsc.svg" },
+        // Pictures in public/: logo = the chain's mark (chain badges), native.logo = the coin (also used for wBWSC)
+        logo: "/logo.svg",
     },
 
     /* ------------------------------------------------------------ programs on BWSC (deploy-kit/bwsc/) */
     programs: {
-        dex: "0x7c082c35ca74824ef1f922f0dc93d352e8c8dedb",          // BwscDex: every swap pair
-        staking: "0xd86857736ada42942dea0fcc5cb9bd3a0358bb83",      // BwscStaking: every stake pool
-        limit: "0x309997d7f38b92005801fc594fb426d575e4fc9a",        // BwscLimit: limit orders (coin for coin at your price)
-        bridge: "0xc08aa24824d7fc5461fda1c0b1e6accabae2fb03",       // BwscBridge: the bridge hub
+        dex: "0x49e79ee25dcd834fc4b32317604e702760992422",          // BwscDex: every swap pair
+        staking: "0xd76511e694ac1db3feb6e77b2f7461b81f1bb08a",      // BwscStaking: every stake pool
+        limit: "0xc1dfaf06b56fb3b38f13ece2e93cb07904475b1c",        // BwscLimit: limit orders (coin for coin at your price)
+        bridge: "",       // BwscBridge: the bridge hub
     },
 
     /* ------------------------------------------------------------ the app directory (#/apps, the home page, the header search) */
@@ -68,30 +70,30 @@ export default {
         apps: [
             // EXAMPLES: four games to show how the directory looks (pictures in public/apps/). Replace with your real apps;
             // fill url to make one live ("" = Coming soon).
-            { id: "wolf-runner", name: "Wolf Runner", category: "games", url: "", addedAt: "2026-11-15", featured: true,
-                logo: "/apps/wolf-runner.svg", cover: "/apps/wolf-runner-cover.svg", developer: "Night Pack Studio",
-                description: "Run through the night forest, dodge traps and collect coins. Best scores win weekly prizes.",
-                about: "An endless runner in a forest that changes every night. Jump, slide and dash past traps and collect BWSC on the way.\n\nThe best ten scores of each week share the prize pool. Scores are written to the chain, so anyone can check the leaderboard.",
-                tags: [ "arcade", "runner", "leaderboard" ], risk: "low",
-                audit: { by: "Example Audits", url: "https://example.com/audits/wolf-runner.pdf", date: "2026-11" },
-                links: { website: "https://example.com/wolf-runner", x: "https://x.com/example" } },
-            { id: "chain-chess", name: "Chain Chess", category: "games", url: "", addedAt: "2026-10-01", featured: true, status: "beta",
-                logo: "/apps/chain-chess.svg", cover: "/apps/chain-chess-cover.svg", developer: "Bluewolfchain",
-                description: "Play chess against anyone. Every move is a transaction, every game can be replayed from the chain.",
-                about: "Challenge anyone to a game of chess. Every move is a transaction, so a game can never be changed afterwards and can be replayed move by move from the chain.\n\nPlay for fun or put a stake on the game: the program holds both stakes and pays the winner.",
-                tags: [ "board", "pvp", "strategy" ], core: true, risk: "low",
-                links: { website: "https://example.com/chain-chess", github: "https://github.com/example/chain-chess" } },
-            { id: "moon-dice", name: "Moon Dice", category: "games", url: "", addedAt: "2026-09-01",
-                logo: "/apps/moon-dice.svg", cover: "/apps/moon-dice-cover.svg", developer: "Lucky Labs",
-                description: "Roll against the program. Odds and payouts are in the code for anyone to read.",
-                about: "A dice game of pure chance against the program. The odds and payouts are written in the program's code for anyone to read.\n\nThis is gambling: you can lose what you bet. Only play with what you can afford to lose.",
-                tags: [ "dice", "luck", "chance" ], risk: "high",
-                links: { website: "https://example.com/moon-dice", telegram: "https://t.me/example" } },
-            { id: "pixel-farm", name: "Pixel Farm", category: "games", url: "", addedAt: "2026-09-20",
-                logo: "/apps/pixel-farm.svg", cover: "/apps/pixel-farm-cover.svg", developer: "Tiny Acres",
-                description: "Grow crops, trade harvests with neighbours and build the biggest farm on the chain.",
-                about: "A slow, friendly farming game. Plant crops, wait for the harvest and trade it with neighbours.\n\nOpening soon.",
-                tags: [ "farming", "idle", "nft" ], risk: "medium" },
+            // { id: "wolf-runner", name: "Wolf Runner", category: "games", url: "", addedAt: "2026-11-15", featured: true,
+            //     logo: "/apps/wolf-runner.svg", cover: "/apps/wolf-runner-cover.svg", developer: "Night Pack Studio",
+            //     description: "Run through the night forest, dodge traps and collect coins. Best scores win weekly prizes.",
+            //     about: "An endless runner in a forest that changes every night. Jump, slide and dash past traps and collect BWSC on the way.\n\nThe best ten scores of each week share the prize pool. Scores are written to the chain, so anyone can check the leaderboard.",
+            //     tags: [ "arcade", "runner", "leaderboard" ], risk: "low",
+            //     audit: { by: "Example Audits", url: "https://example.com/audits/wolf-runner.pdf", date: "2026-11" },
+            //     links: { website: "https://example.com/wolf-runner", x: "https://x.com/example" } },
+            // { id: "chain-chess", name: "Chain Chess", category: "games", url: "", addedAt: "2026-10-01", featured: true, status: "beta",
+            //     logo: "/apps/chain-chess.svg", cover: "/apps/chain-chess-cover.svg", developer: "Bluewolfchain",
+            //     description: "Play chess against anyone. Every move is a transaction, every game can be replayed from the chain.",
+            //     about: "Challenge anyone to a game of chess. Every move is a transaction, so a game can never be changed afterwards and can be replayed move by move from the chain.\n\nPlay for fun or put a stake on the game: the program holds both stakes and pays the winner.",
+            //     tags: [ "board", "pvp", "strategy" ], core: true, risk: "low",
+            //     links: { website: "https://example.com/chain-chess", github: "https://github.com/example/chain-chess" } },
+            // { id: "moon-dice", name: "Moon Dice", category: "games", url: "", addedAt: "2026-09-01",
+            //     logo: "/apps/moon-dice.svg", cover: "/apps/moon-dice-cover.svg", developer: "Lucky Labs",
+            //     description: "Roll against the program. Odds and payouts are in the code for anyone to read.",
+            //     about: "A dice game of pure chance against the program. The odds and payouts are written in the program's code for anyone to read.\n\nThis is gambling: you can lose what you bet. Only play with what you can afford to lose.",
+            //     tags: [ "dice", "luck", "chance" ], risk: "high",
+            //     links: { website: "https://example.com/moon-dice", telegram: "https://t.me/example" } },
+            // { id: "pixel-farm", name: "Pixel Farm", category: "games", url: "", addedAt: "2026-09-20",
+            //     logo: "/apps/pixel-farm.svg", cover: "/apps/pixel-farm-cover.svg", developer: "Tiny Acres",
+            //     description: "Grow crops, trade harvests with neighbours and build the biggest farm on the chain.",
+            //     about: "A slow, friendly farming game. Plant crops, wait for the harvest and trade it with neighbours.\n\nOpening soon.",
+            //     tags: [ "farming", "idle", "nft" ], risk: "medium" },
         ],
     },
 
@@ -117,8 +119,8 @@ export default {
             rpcUrl: "https://bsc-dataseed.bnbchain.org",
             explorerUrl: "https://bscscan.com",
             native: { symbol: "BNB", name: "BNB", decimals: 18 },
-            bridge: "0x9cE68e5D061c6bba6391593B0Dc8db4d50Ff2cFa",
-            confirmations: 15,
+            bridge: "",
+            confirmations: 20,
         },
     ],
 
@@ -146,11 +148,12 @@ export default {
     // these add a friendly name and the order in lists. There are no prices here: prices come from the pools (see `prices`).
     // A coin that is in a pool but not here still works; it shows its on-chain ticker and is marked "not in the list".
     // wraps: "native" = this token is the chain's coin, wrapped 1 : 1 (wBWSC); the swap page wraps / unwraps it directly.
+    // logo (optional) = a picture in public/ ("/coins/usdt.svg") or an https:// link; without it the coin shows its first letter.
     tokens: [
-        { chain: "bwsc", address: "", symbol: "USDT", name: "Tether USD" },
-        { chain: "bwsc", address: "", symbol: "wBWSC", name: "Wrapped BWSC", wraps: "native" },
+        { chain: "bwsc", address: "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d", symbol: "USDT", name: "Tether USD", logo: "/coins/tether-256.png" },
+        { chain: "bwsc", address: "0x93ade50b1d98ad2f8706e19cf5582411d8de62ca", symbol: "wBWSC", name: "Wrapped BWSC", wraps: "native" },
         { chain: "bsc", address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", name: "Tether USD (BSC)" },
-        { chain: "bsc", address: "", symbol: "BWSC", name: "Bluewolfchain (BEP-20)" },
+        { chain: "bsc", address: "", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc-256.png" },
     ],
 
     /* ------------------------------------------------------------ prices */

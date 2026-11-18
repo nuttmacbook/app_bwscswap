@@ -45,7 +45,7 @@ const header = (data) => {
         <div class="mx-auto flex w-full max-w-6xl 2xl:max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
             <!-- Brand -->
             <a href="#/" class="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
-                <img src="/logo.svg" alt="" class="size-8 shrink-0" />
+                <img src="/logo.svg" alt="" class="h-8 w-[30px] shrink-0 object-contain" />
                 <span class="truncate text-[15px] font-semibold tracking-tight text-white sm:text-base">${escapeHtml(settings.appName)}</span>
             </a>
 

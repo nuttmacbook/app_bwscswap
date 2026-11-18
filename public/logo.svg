@@ -1,14 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#111c33"/><stop offset="1" stop-color="#04060b"/></linearGradient>
-    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cfe2ff"/><stop offset=".55" stop-color="#5ea6ff"/><stop offset="1" stop-color="#2563eb"/></linearGradient>
-    <linearGradient id="cyan" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#0ea5c6"/><stop offset="1" stop-color="#a5f3fc"/></linearGradient>
-  </defs>
-  <rect width="64" height="64" rx="15" fill="url(#bg)"/>
-  <rect x=".75" y=".75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#5ea6ff" stroke-opacity=".3" stroke-width="1.5"/>
-  <!-- Two arcs chasing each other: one swap, both ways -->
-  <path d="M17 29a15 15 0 0 1 25.6-9.6" fill="none" stroke="url(#blue)" stroke-width="5.5" stroke-linecap="round"/>
-  <path d="M44.4 14.6l-1.2 6.9-6.9-1.2" fill="none" stroke="url(#blue)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M47 35a15 15 0 0 1-25.6 9.6" fill="none" stroke="url(#cyan)" stroke-width="5.5" stroke-linecap="round"/>
-  <path d="M19.6 49.4l1.2-6.9 6.9 1.2" fill="none" stroke="url(#cyan)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1136 1202" width="1136" height="1202"><defs><linearGradient id="g1" gradientUnits="userSpaceOnUse" x1="1000" y1="60" x2="250" y2="1150"><stop offset="0" stop-color="#5CBCFF"/><stop offset="1" stop-color="#1F5FD6"/></linearGradient><mask id="m1" maskUnits="userSpaceOnUse" x="0" y="0" width="1136" height="1202"><rect width="1136" height="1202" fill="#fff"/><path d="M643 148 L616 306 L540 332 Z M716 450 L794 462 L834 524 L760 504 Z" fill="#000"/></mask></defs><g transform="translate(0.00 0.00) scale(1.00000)"><g fill="url(#g1)" mask="url(#m1)"><path d="M435 228 L412 314 L428 360 L1046 712 L938 796 L650 740 L524 854 L532 1000 L492 1158 L268 884 L204 732 L138 852 L98 708 L164 544 L42 576 L122 454 L284 344 L210 344 L330 254 Z"/><path d="M656 826 L684 996 L602 1114 L626 866 Z"/><path d="M690 42 L705 280 L850 400 L895 510 L1092 646 L1032 664 L1046 712 L968 773 L598 688 L394 832 L358 662 L458 540 L318 540 L456 410 L428 360 L468 256 Z"/></g></g></svg>

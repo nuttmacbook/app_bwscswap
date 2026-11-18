@@ -14,12 +14,32 @@ const toneOf = (symbol) => {
     return [ ...String(symbol) ].reduce((h, c) => h + c.charCodeAt(0), 0) % 6;
 };
 
-/** Round badge with the token's first letter (no outside images) */
-const tokenBadge = (token, tone = null, size = "size-7") => /*html*/`
+/**
+ * Coin and chain logos from settings/config.js: hub.native.logo (the chain's coin, also its wrapped token),
+ * tokens[].logo, hub.logo and chains[].logo. Pictures live in public/ (e.g. "/coins/bwsc.svg").
+ */
+const NATIVE = config.hub?.native ?? {};
+const LOGOS = new Map();
+const addLogo = (k, logo) => { if (k && logo && !LOGOS.has(String(k).toLowerCase())) LOGOS.set(String(k).toLowerCase(), String(logo)); };
+for (const t of config.tokens ?? []) {
+    const logo = t.logo || (t.wraps === "native" ? NATIVE.logo : "");
+    if (t.address) addLogo(`${t.chain}:${t.address}`, logo);
+}
+addLogo(NATIVE.symbol, NATIVE.logo);
+for (const t of config.tokens ?? []) addLogo(t.symbol, t.logo || (t.wraps === "native" ? NATIVE.logo : ""));
+// By address on its own chain (the same address can exist on two chains), then by symbol
+const logoOf = (token) => token?.logo || (token?.address ? LOGOS.get(`${token.chain ?? config.hub?.key}:${token.address}`.toLowerCase()) : "")
+    || LOGOS.get(String(token?.symbol ?? "").toLowerCase()) || "";
+const chainLogo = (chain) => chain?.logo || (chain?.key && chain.key === config.hub?.key ? config.hub?.logo : "") || [ ...(config.chains ?? []) ].find((c) => c.key === chain?.key)?.logo || "";
+
+/** Round coin badge: its logo when settings has one, else its first letter on a color */
+const tokenBadge = (token, tone = null, size = "size-7") => logoOf(token) ? /*html*/`
+    <img src="${escapeHtml(logoOf(token))}" alt="" class="${size} shrink-0 rounded-full ring-2 ring-ink-900" aria-hidden="true" loading="lazy" decoding="async" />` : /*html*/`
     <span class="grid ${size} shrink-0 place-items-center rounded-full bg-gradient-to-br ${TONES[(tone ?? toneOf(token?.symbol)) % TONES.length]} text-[11px] font-bold text-ink-950 ring-2 ring-ink-900" aria-hidden="true">${escapeHtml(String(token?.symbol ?? "?").replace(/^[tbw](?=[A-Z])/, "").slice(0, 1))}</span>`;
 
-/** Chain badge: square, first letters of its short name */
-const chainBadge = (chain, size = "size-7") => /*html*/`
+/** Chain badge: its logo, or a square with the first letters of its short name */
+const chainBadge = (chain, size = "size-7") => chainLogo(chain) ? /*html*/`
+    <span class="grid ${size} shrink-0 place-items-center rounded-lg border border-white/10 bg-ink-900 p-1" aria-hidden="true"><img src="${escapeHtml(chainLogo(chain))}" alt="" class="size-full object-contain" /></span>` : /*html*/`
     <span class="grid ${size} shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.06] text-[10px] font-bold text-zinc-200" aria-hidden="true">${escapeHtml(String(chain?.short ?? "?").slice(0, 4))}</span>`;
 
 /** Section title used by every page */

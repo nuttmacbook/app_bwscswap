@@ -1,9 +1,9 @@
 {
-  "owner": "<YOUR_WALLET>",
+  "owner": "0x8958e4f05d6D49D14B959f0500a1f01a900B1BfD",
   "coins": [
-    { "token": "0x0000000000000000000000000000000000000000", "feeBps": "10n" },
-    { "token": "<USDT_ON_BWSC_ADDRESS>", "feeBps": "10n" },
-    { "token": "<wBWSC_ADDRESS>", "feeBps": "10n" }
+    { "token": "0x0000000000000000000000000000000000000000", "feeBps": "30n" },
+    { "token": "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d", "feeBps": "30n" },
+    { "token": "0x93ade50b1d98ad2f8706e19cf5582411d8de62ca", "feeBps": "30n" }
   ],
   "description": "BWSC limit orders: put up one coin for another at your price; anyone can fill it"
 }

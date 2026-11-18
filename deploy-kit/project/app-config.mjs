@@ -18,7 +18,8 @@ const testConfig = ({ nodeUrl, local, deployed, bsc, signerUrl, extraChains = []
         chainId: Number(local.LOCAL_CHAIN_ID),
         nodeUrl,
         explorerUrl: nodeUrl,
-        native: { symbol: local.LOCAL_COIN_SYMBOL, name: local.LOCAL_COIN_NAME, decimals: 18 },
+        native: { symbol: local.LOCAL_COIN_SYMBOL, name: local.LOCAL_COIN_NAME, decimals: 18, logo: "/coins/bwsc.svg" },
+        logo: "/logo.svg",
     },
     programs: {
         dex: deployed.addresses.BwscDex ?? "",
@@ -71,7 +72,7 @@ const testConfig = ({ nodeUrl, local, deployed, bsc, signerUrl, extraChains = []
         { chain: "bwsc", address: deployed.addresses.USDT ?? "", symbol: "USDT", name: "Tether USD" },
         { chain: "bwsc", address: deployed.addresses.WBWSC ?? "", symbol: "wBWSC", name: "Wrapped BWSC", wraps: "native" },
         { chain: "bsc", address: bsc?.tokens.USDT?.address ?? "", symbol: "USDT", name: "Tether USD (BSC)" },
-        { chain: "bsc", address: bsc?.tokens.tBWSC?.address ?? "", symbol: "BWSC", name: "Bluewolfchain (BEP-20)" },
+        { chain: "bsc", address: bsc?.tokens.tBWSC?.address ?? "", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc.svg" },
         ...extraTokens,
     ],
 });

@@ -14,7 +14,7 @@ const footer = /*html*/`
     <footer class="mx-auto w-full max-w-6xl 2xl:max-w-7xl px-4 pb-28 pt-16 sm:px-6 md:pb-12">
         <div class="grid gap-10 border-t border-white/[0.06] pt-12 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
             <div class="min-w-0">
-                <a href="#/" class="inline-flex items-center gap-2.5 text-[15px] font-semibold text-white"><img src="/logo.svg" alt="" class="size-7" />${escapeHtml(settings.appName)}</a>
+                <a href="#/" class="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400" aria-label="${escapeHtml(settings.appName)} home"><img src="/brand/logo-horizontal-on-dark.svg" alt="${escapeHtml(settings.appName)}" class="h-14 w-auto" /></a>
                 <p class="mt-4 max-w-xs text-[13px] leading-relaxed text-zinc-500">${escapeHtml(settings.tagline)}</p>
                 <p class="mt-4 font-mono text-[12px] text-zinc-600">Chain ID ${settings.chainId}</p>
             </div>

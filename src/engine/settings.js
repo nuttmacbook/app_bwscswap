@@ -58,6 +58,7 @@ for (const c of config.chains ?? []) {
 for (const t of config.tokens ?? []) {
     if (!chainKeys.has(t.chain)) addProblem(`settings/config.js: token ${t.symbol} is on chain "${t.chain}", which is not hub.key or a chains key.`);
     checkAddress(`tokens (${t.symbol} on ${t.chain}).address`, t.address);
+    if (t.logo !== undefined && !/^(\/|https:\/\/)\S+$/.test(String(t.logo))) addProblem(`settings/config.js: tokens (${t.symbol}).logo must be a path in public/ ("/coins/x.svg") or an https:// link.`);
     if (t.priceUsd !== undefined) addProblem(`settings/config.js: tokens (${t.symbol}).priceUsd is no longer used: prices come from the pools. Remove it.`);
 }
 
