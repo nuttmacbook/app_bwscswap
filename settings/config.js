@@ -36,7 +36,7 @@ export default {
         dex: "0x49e79ee25dcd834fc4b32317604e702760992422",          // BwscDex: every swap pair
         staking: "0xd76511e694ac1db3feb6e77b2f7461b81f1bb08a",      // BwscStaking: every stake pool
         limit: "0xc1dfaf06b56fb3b38f13ece2e93cb07904475b1c",        // BwscLimit: limit orders (coin for coin at your price)
-        bridge: "",       // BwscBridge: the bridge hub
+        bridge: "0x73a504d7dd9f60ba8fd24f41a27f11e537bfd4f3",       // BwscBridge: the bridge hub
     },
 
     /* ------------------------------------------------------------ the app directory (#/apps, the home page, the header search) */
@@ -112,6 +112,7 @@ export default {
     //     confirmations: "finalized" },
     chains: [
         {
+            logo: "/brand/bnbchain.png",
             key: "bsc",
             short: "BSC",
             name: "BNB Smart Chain",
@@ -119,7 +120,7 @@ export default {
             rpcUrl: "https://bsc-dataseed.bnbchain.org",
             explorerUrl: "https://bscscan.com",
             native: { symbol: "BNB", name: "BNB", decimals: 18 },
-            bridge: "",
+            bridge: "0x3Bb85299a595c9B80F7dA1777a26A1dDF0105e45",
             confirmations: 20,
         },
     ],
@@ -153,7 +154,7 @@ export default {
         { chain: "bwsc", address: "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d", symbol: "USDT", name: "Tether USD", logo: "/coins/tether-256.png" },
         { chain: "bwsc", address: "0x93ade50b1d98ad2f8706e19cf5582411d8de62ca", symbol: "wBWSC", name: "Wrapped BWSC", wraps: "native" },
         { chain: "bsc", address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", name: "Tether USD (BSC)" },
-        { chain: "bsc", address: "", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc-256.png" },
+        { chain: "bsc", address: "0x251DbFdb9Eee5Ff3f90B337DcB8fc84E566830a5", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc-256.png" },
     ],
 
     /* ------------------------------------------------------------ prices */

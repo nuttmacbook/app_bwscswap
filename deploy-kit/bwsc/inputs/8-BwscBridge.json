@@ -1,19 +1,19 @@
 {
-  "owner": "<YOUR_WALLET>",
-  "signer": "<SIGNER_ADDRESS>",
+  "owner": "0x8958e4f05d6D49D14B959f0500a1f01a900B1BfD",
+  "signer": "0x5BECab804704E0e85E378478Ff52471f3f1b05A0",
   "routes": [
     {
       "chainId": "56n",
       "token": "0x0000000000000000000000000000000000000000",
-      "remoteToken": "<BWSC_ON_BSC_ADDRESS>",
-      "feeBps": "10n",
+      "remoteToken": "0x251DbFdb9Eee5Ff3f90B337DcB8fc84E566830a5",
+      "feeBps": "75n",
       "min": "1000000000000000000n"
     },
     {
       "chainId": "56n",
-      "token": "<USDT_ON_BWSC_ADDRESS>",
+      "token": "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d",
       "remoteToken": "0x55d398326f99059fF775485246999027B3197955",
-      "feeBps": "10n",
+      "feeBps": "75n",
       "min": "5000000000000000000n"
     }
   ],
