@@ -12,7 +12,7 @@ import { getNetworkData, addNetworkToWallet, getDexData, swapCoins, addLiquidity
     getBridgeData, bridgeTokens, claimBridge, getStakeData, stakeTokens, claimStake, addStakeReward, createStakePool,
     placeLimitOrder, fillLimitOrder, cancelLimitOrder, addLimitCoin, setLimitCoin, withdrawLimitFees } from "../chain";
 import { AUTO_DELIVER } from "../chain/bridge";
-import { header } from "./componants/header";
+import { header, refreshPrice } from "./componants/header";
 import { footer } from "./componants/footer";
 import { notify } from "./componants/toast";
 import { home, homeLoading, homeError } from "./pages/home";
@@ -352,3 +352,8 @@ window.sendSubmit = () => {
         desc: `Every wallet in the list got its amount (${wallets.toLocaleString("en-US")} wallet${wallets === 1 ? "" : "s"}).`,
     });
 };
+
+/* ------------------------------------ the coin's price in the header */
+
+// Read again every 30 s while the tab is open and in view (the read itself is cached 30 s and shared by all pages)
+setInterval(() => { if (!document.hidden) refreshPrice(); }, 30_000);
