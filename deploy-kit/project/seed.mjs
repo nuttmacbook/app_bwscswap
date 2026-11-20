@@ -40,7 +40,7 @@ async function trade(deployed, signer, path, amountIn, { slippageBps = 100n } = 
 
 /** Gives `people` USDT from the funder in one transaction (multiTransfer) */
 async function handOut(deployed, people, amount) {
-    await deployed.send(deployed.funder, deployed.addresses.USDT, "multiTransfer", { transfers: people.map((p) => ({ to: p.address, amount })) }, { gasLimit: 900_000 });
+    await deployed.send(deployed.funder, deployed.addresses.USDT, "multiTransfer", { transfers: people.map((p) => ({ to: p.address, amount })) }, { gasLimit: 2_500_000 });
 }
 
 /**

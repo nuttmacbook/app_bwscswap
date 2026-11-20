@@ -80,7 +80,8 @@ function normalizeSteps(config) {
 const requiredProgramsOf = (config, settings) => (config?.requiredPrograms ? config.requiredPrograms(settings) : {});
 
 /** Gas for a deploy: the node charges call + 10 per byte of code; leave room for the initialization input */
-const deployGas = (size) => Math.max(500_000, 100_000 + size * 12);
+// Bluewolfchain gas (15,000 a transaction, code 33 a byte, …): a deploy pays for every byte of the code
+const deployGas = (size) => Math.min(4_800_000, Math.max(1_000_000, 200_000 + size * 60));
 
 /** Sends one transaction and waits until it worked (throws the program's message otherwise) */
 async function sendAndWait(client, signer, fields) {
@@ -117,7 +118,7 @@ async function runStep(step, { client, deployer, admin, ctx, build }) {
     const out = { address, deployTx: deployed.transactionHash, initTx: null, isLive: false, gas: { deploy: deployed.gasUsed } };
     if (!admin) return out;
 
-    const inited = await sendAndWait(client, admin, { action: "init", to: address, gasLimit: 1_000_000 });
+    const inited = await sendAndWait(client, admin, { action: "init", to: address, gasLimit: 3_000_000 });
     Object.assign(out, { initTx: inited.transactionHash, isLive: true });
     out.gas.init = inited.gasUsed;
     await verifyStep(step, { client, ctx, address });

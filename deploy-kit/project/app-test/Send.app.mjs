@@ -57,8 +57,8 @@ export default async function (t) {
 
     await t.step("multi transfer: a token to 250 wallets", async () => {
         const { page, errors } = await t.open("#/send", { wallet: "demo" });
-        // 200 token transfers use about 0.9M gas: the demo wallet needs more of the chain's coin for the fee
-        for (let i = 0; i < 3; i++) await t.panelButton(page, "(gas)");
+        // 200 token transfers use about 2.2M gas (Bluewolfchain gas table): the demo wallet needs more coin for the fee
+        for (let i = 0; i < 8; i++) await t.panelButton(page, "(gas)");
         await t.panel(page, false);
         await page.waitForSelector("[data-send-text]");
         await page.click("[data-send-coin]");

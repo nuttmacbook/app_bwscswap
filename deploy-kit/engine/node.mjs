@@ -63,7 +63,9 @@ function startNode({ port, chainId, blockMs, people, balance, coinName, coinSymb
     const funded = [ 0, 1, 2, 3, 4, ...Array.from({ length: people }, (_, n) => PEOPLE_FROM + n) ];
     const balances = Object.fromEntries(funded.map((i) => [ devWallet(i).address.toLowerCase(), wei ]));
     fs.mkdirSync(path.dirname(genesisFile), { recursive: true });
-    fs.writeFileSync(genesisFile, JSON.stringify({ chainId, balances }));
+    // The live Bluewolfchain's gas table (genesis "forks": { "bluewolf": 0 }): 15,000 gas per transaction and unit prices
+    // 2.5x the defaults. Tests use it too, so gas limits measured here hold on the real chain.
+    fs.writeFileSync(genesisFile, JSON.stringify({ chainId, balances, forks: { bluewolf: 0 } }));
 
     const out = logFile ? fs.openSync(logFile, "w") : "ignore";
     const server = isMock() ? path.join(DEV_DIR, "engine", "mock", "server.mjs") : path.join(chainDir(), "server.js");
