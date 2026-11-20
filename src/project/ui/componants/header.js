@@ -4,7 +4,7 @@ import { icon as line } from "../icons";
 
 /*
  * YOUR CODE (off-chain). Top bar (logo, pages, search, wallet) and, on phones, a tab bar at the bottom.
- * Pages: Apps (the chain's directory) · Trade (Swap, Limit orders, Pool: tabs on those pages) · Bridge · Stake · Docs.
+ * Pages: Apps (the chain's directory) · Trade (Swap, Limit orders, Pool: tabs on those pages) · Bridge · Stake · Send · Docs.
  * The logo goes home.
  */
 
@@ -19,6 +19,7 @@ const ICONS = {
     stake: `<path d="M12 3l8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4"/>`,
     pool: `<path d="M12 3c3 4 6 7 6 11a6 6 0 0 1-12 0c0-4 3-7 6-11z"/>`,
     limit: `<path d="M4 7h13l-3-3M20 17H7l3 3"/>`,
+    send: `<circle cx="5" cy="12" r="2"/><path d="M7 12h3c2 0 3-6 6-6h4M10 12c2 0 3 6 6 6h4M10 12h10M17 3l3 3-3 3M17 15l3 3-3 3"/>`,
 };
 
 // pages: the routes that light up this link (Trade = Swap, Limit orders and Pool)
@@ -27,6 +28,8 @@ const LINKS = [
     { page: "trade", pages: [ "swap", "limit", "pool" ], href: "#/swap", label: "Trade" },
     { page: "bridge", pages: [ "bridge" ], href: "#/bridge", label: "Bridge" },
     { page: "stake", pages: [ "stake" ], href: "#/stake", label: "Stake" },
+    // Multi transfer: in the top bar from 1024 px (no room for six links on tablets); otherwise in Apps and the search
+    { page: "send", pages: [ "send" ], href: "#/send", label: "Send", isDesktopOnly: true, isWideOnly: true },
     { page: "docs", pages: [ "docs" ], href: "#/docs", label: "Docs" },
 ];
 
@@ -53,7 +56,7 @@ const header = (data) => {
             <nav class="hidden items-center gap-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1 text-[13px] font-medium md:flex" aria-label="Pages">
                 ${LINKS.filter((l) => !l.isPhoneOnly).map((l) => /*html*/`
                     <a href="${l.href}" ${l.pages.includes(page) ? `aria-current="page"` : ""}
-                        class="rounded-lg px-3.5 py-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400
+                        class="${l.isWideOnly ? "hidden lg:block" : ""} rounded-lg px-3.5 py-1.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400
                         ${l.pages.includes(page) ? "bg-white/[0.08] text-white" : "text-zinc-400 hover:text-white"}">${l.label}</a>`).join("")}
                 ${settings.explorerUrl ? /*html*/`<a href="${escapeHtml(settings.explorerUrl)}" target="_blank" rel="noopener"
                     class="inline-flex items-center gap-1 rounded-lg px-3.5 py-1.5 text-zinc-400 transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">Explorer${line("external", "size-3.5")}</a>` : ""}

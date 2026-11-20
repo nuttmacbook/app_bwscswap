@@ -167,6 +167,23 @@ const PAGES = [
             ] ],
         ],
     },
+    {
+        slug: "multi-transfer", group: "Using the apps", title: "Multi transfer",
+        lead: "Send {SYMBOL} or a token to hundreds of wallets at once.",
+        blocks: [
+            [ "p", "Paste a list, type it, or upload a CSV file: one wallet per line, the address then the amount, with a comma, space, tab or = between them. A first line such as `address,amount` is skipped." ],
+            [ "code", { lang: "csv", file: "list.csv", code: "address,amount\n0x1111111111111111111111111111111111111111,1.5\n0x2222222222222222222222222222222222222222,20" } ],
+            [ "list", [
+                "Every line is checked as you type. A line with a problem is listed by its number, and nothing can be sent until it is fixed.",
+                "A wallet listed twice gets both amounts. **Merge** turns it into one line with the amounts added up.",
+                "Turn on **Same amount for everyone** to list only addresses.",
+                "Each transaction pays up to 200 wallets: all of them or none. A longer list is split into several transactions, each confirmed in your wallet.",
+                "If one stops, the ones already sent are marked with their transaction, and the button sends only the rest.",
+            ] ],
+            [ "p", "A token needs one approval for the total first; then each amount goes straight from your wallet to each wallet. {SYMBOL} passes through the program within the same transaction. The program has no owner and no fee, and never keeps any coins." ],
+            [ "note", "The network fee grows with the list: a token transfer uses about 4,500 gas per wallet and {SYMBOL} about 1,300. Keep enough {SYMBOL} for the fee." ],
+        ],
+    },
 
     /* ------------------------------------------------------------ programs */
     {

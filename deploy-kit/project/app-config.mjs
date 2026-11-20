@@ -25,6 +25,7 @@ const testConfig = ({ nodeUrl, local, deployed, bsc, signerUrl, extraChains = []
         dex: deployed.addresses.BwscDex ?? "",
         staking: deployed.addresses.BwscStaking ?? "",
         limit: deployed.addresses.BwscLimit ?? "",
+        multisend: deployed.addresses.BwscMultiSend ?? "",
         bridge: deployed.addresses.BwscBridge ?? "",
     },
     chains: [ {

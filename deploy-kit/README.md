@@ -50,6 +50,7 @@ deploy-kit/
 | 3 | BWSC explorer | BwscDex (`inputs/3-BwscDex.json`) | 2 | `programs.dex` |
 | 4 | BWSC explorer | BwscStaking (`inputs/4-BwscStaking.json`) | | `programs.staking` |
 | 4b | BWSC explorer | BwscLimit: limit orders (`inputs/4b-BwscLimit.json`) | 1, 2 | `programs.limit` |
+| 4c | BWSC explorer | BwscMultiSend: multi transfer (`inputs/4c-BwscMultiSend.json`) | | `programs.multisend` |
 | 5 | Remix → BSC | BwscCoinBsc | | `tokens` (BWSC, chain bsc) · ใช้ในขั้น 7, 8 |
 | 6 | Remix → BSC | BwscBridgeEvm (logic) | | ใช้ในขั้น 7 |
 | 7 | Remix → BSC | BaseProxyUsed (proxy ของ bridge) | 0, 1, 5, 6 | `chains[bsc].bridge` |
@@ -58,7 +59,8 @@ deploy-kit/
 | 10 | เซิร์ฟเวอร์ของคุณ | รัน `bridge-signer/` | 7, 8 | `bridgeSigner.url` |
 
 ไม่ต้องทำทุกขั้นพร้อมกัน
-- ทำแค่ 1–4 ก็เปิด Swap กับ Stake ได้ (+ 4b = Limit orders)
+- ทำแค่ 1–4 ก็เปิด Swap กับ Stake ได้ (+ 4b = Limit orders, + 4c = Multi transfer)
+- 4c ไม่ต้องใช้แอดเดรสจากขั้นไหน ดีพลอยเมื่อไหร่ก็ได้
 - หน้า Bridge จะขึ้นว่ายังไม่ได้ตั้งค่า จนกว่าจะทำขั้น 5–10
 
 ## ขั้น 0 · กระเป๋า signer ของ bridge
@@ -68,7 +70,7 @@ deploy-kit/
 - **private key** ใส่ใน `bridge-signer/.env` บนเซิร์ฟเวอร์ของคุณที่เดียว ใครได้ key นี้ไปจะเซ็นยอดเท่าไหร่ก็ได้
 - **กระเป๋า relayer** (แนะนำให้สร้างอีก 1 ใบ แยกจาก signer และ owner): ส่งเหรียญให้ผู้ใช้อัตโนมัติและจ่ายค่า gas · ใส่ key ใน `RELAYER_PRIVATE_KEY` แล้วเติม BWSC บน BWSC และ BNB บน BSC (ดูยอดที่ `/status`)
 
-## ขั้น 1–4, 4b และ 8 · ดีพลอยโปรแกรมบน BWSC ด้วย explorer
+## ขั้น 1–4, 4b, 4c และ 8 · ดีพลอยโปรแกรมบน BWSC ด้วย explorer
 
 ทำแบบเดียวกันทุกตัว:
 
@@ -79,7 +81,7 @@ deploy-kit/
 3. **Init input (JSON)**: ก้อปไฟล์จาก `bwsc/inputs/` มาวาง แล้วแทนที่ช่อง `<...>` ด้วยแอดเดรสจริง
 4. **Attached value**: `0`
 5. **Upgrader**:
-   - USDT (ขั้น 1) และ wBWSC (ขั้น 2): **เว้นว่าง** โค้ดเหรียญจะเปลี่ยนไม่ได้ตลอดไป คนถือเหรียญไว้ใจได้
+   - USDT (ขั้น 1), wBWSC (ขั้น 2) และ BwscMultiSend (ขั้น 4c): **เว้นว่าง** โค้ดจะเปลี่ยนไม่ได้ตลอดไป คนใช้ไว้ใจได้
    - BwscDex, BwscStaking, BwscLimit, BwscBridge: กด **Use my wallet as upgrader** อัปเกรดโค้ดภายหลังได้ แต่ admin ต้องอนุมัติทุกครั้ง
 6. กด **Deploy** แล้วเซ็น จะได้แอดเดรสโปรแกรมพร้อมสถานะ "awaiting approval"
 7. **อนุมัติ (คุณเป็น admin):** เปิดหน้าโปรแกรมใน explorer → **Approve** (init) → เซ็น
@@ -94,6 +96,7 @@ deploy-kit/
 | 3 | `BwscDex.js` | `inputs/3-BwscDex.json` | `<YOUR_WALLET>`, `<wBWSC_ADDRESS>` (ขั้น 2) |
 | 4 | `BwscStaking.js` | `inputs/4-BwscStaking.json` | `<YOUR_WALLET>` |
 | 4b | `BwscLimit.js` | `inputs/4b-BwscLimit.json` | `<YOUR_WALLET>`, `<USDT_ON_BWSC_ADDRESS>` (ขั้น 1), `<wBWSC_ADDRESS>` (ขั้น 2) |
+| 4c | `BwscMultiSend.js` | `inputs/4c-BwscMultiSend.json` | ไม่มี |
 | 8 | `BwscBridge.js` | `inputs/8-BwscBridge.json` | `<YOUR_WALLET>`, `<SIGNER_ADDRESS>` (ขั้น 0), `<BWSC_ON_BSC_ADDRESS>` (ขั้น 5), `<USDT_ON_BWSC_ADDRESS>` (ขั้น 1) |
 
 **ตัวเลขใน input**
@@ -259,7 +262,7 @@ Contract: `BwscCoinBsc` → ใส่ค่า constructor แล้วกด De
 แก้ `settings/config.js` ไฟล์เดียว (commit ได้ ไม่มีความลับ):
 
 ```js
-programs: { dex: "<ขั้น 3>", staking: "<ขั้น 4>", limit: "<ขั้น 4b>", bridge: "<ขั้น 8>" },
+programs: { dex: "<ขั้น 3>", staking: "<ขั้น 4>", limit: "<ขั้น 4b>", multisend: "<ขั้น 4c>", bridge: "<ขั้น 8>" },
 chains: [ { key: "bsc", ..., bridge: "<proxy ขั้น 7>" } ],
 bridgeSigner: { url: "https://<เซิร์ฟเวอร์ signer>" },
 tokens: [
@@ -291,6 +294,7 @@ prices: { unit: "USDT" },                       // ราคาทุกอย�
 | 3 | BwscDex | |
 | 4 | BwscStaking | |
 | 4b | BwscLimit | |
+| 4c | BwscMultiSend | |
 | 5 | BwscCoinBsc = BWSC (BSC) | |
 | 6 | BwscBridgeEvm logic (BSC) | |
 | 7 | **proxy = bridge ฝั่ง BSC** | |

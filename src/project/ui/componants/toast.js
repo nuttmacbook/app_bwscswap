@@ -42,6 +42,8 @@ const STAGES = {
     unstaking: { title: "Taking out", desc: "Sent. Waiting for the block.", where: "chain" },
     reward:    { title: "Confirm reward", desc: "Confirm in your wallet. This reward is streamed to stakers and cannot be taken back.", where: "wallet" },
     rewarding: { title: "Adding reward", desc: "Sent. Waiting for the block.", where: "chain" },
+    send:      { title: "Confirm transfer", desc: "Confirm in your wallet: one transaction sends to {count}. All of them get their amount, or none do.", where: "wallet" },
+    sending:   { title: "Sending", desc: "On its way. Waiting for the block.", where: "chain" },
     place:     { title: "Confirm order", desc: "Confirm in your wallet. Your coins wait in the limit-order program until the order is filled or you cancel it.", where: "wallet" },
     placing:   { title: "Placing the order", desc: "Sent. Waiting for the block.", where: "chain" },
     fill:      { title: "Confirm buy", desc: "Confirm in your wallet: you pay the order's price and receive its coins in the same transaction.", where: "wallet" },
@@ -210,10 +212,13 @@ const show = ({ tone, title, desc, step = null, where = "", hash = "", explorerU
 
 const notify = {
     /** Step of a transaction: { stage, index, total } */
-    pending: ({ stage, index = 0, total = 0 } = {}) => {
+    pending: ({ stage, index = 0, total = 0, batch = 0, batches = 0, count = 0 } = {}) => {
         if (stage === "checking" || !flowStart) flowStart = Date.now();
         const s = STAGES[stage] ?? STAGES.checking;
-        show({ tone: "pending", ...s, step: index && total > 1 ? { index, total } : null, isSticky: true });
+        // Multi transfer: which batch of how many, and how many wallets in it
+        const title = batches > 1 ? `${s.title}: batch ${batch} of ${batches}` : s.title;
+        const desc = count ? s.desc.replace("{count}", `${count} wallet${count === 1 ? "" : "s"}`) : s.desc;
+        show({ tone: "pending", ...s, title, desc, step: index && total > 1 ? { index, total } : null, isSticky: true });
     },
     /** Free-form progress, used by the test panel */
     progress: ({ title, desc } = {}) => {

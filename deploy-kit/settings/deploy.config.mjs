@@ -116,5 +116,13 @@ export default {
             },
             check: (state, ctx) => (state.owner !== ctx.owner.toLowerCase() ? `owner is ${state.owner}, expected ${ctx.owner}.` : state.paused ? "limit orders start paused." : state.coins !== 3 ? "the 3 first coins are not listed." : true),
         }),
+        // Multi transfer: send a coin to many wallets in one transaction. No owner, no upgrader, nothing to set.
+        program({
+            name: "BwscMultiSend",
+            upgradeable: false,
+            init: (ctx) => ({ namespace: ctx.settings.BwscMultiSend.NAMESPACE, description: ctx.settings.BwscMultiSend.DESCRIPTION }),
+            readBack: async (read) => ({ max: (await read("getView", { account: "", token: ZERO })).maxTransfers }),
+            check: (state) => (state.max !== 200n ? `maxTransfers is ${state.max}, expected 200.` : true),
+        }),
     ],
 };

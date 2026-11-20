@@ -6,6 +6,8 @@
  */
 
 const PATHS = {
+    upload: `<path d="M12 16V4M7 9l5-5 5 5M5 16v3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-3"/>`,
+    send: `<circle cx="5" cy="12" r="2"/><path d="M7 12h3c2 0 3-6 6-6h4M10 12c2 0 3 6 6 6h4M10 12h10M17 3l3 3-3 3M17 15l3 3-3 3"/>`,
     arrowRight: `<path d="M5 12h14M13 6l6 6-6 6"/>`,
     arrowLeft: `<path d="M19 12H5M11 6l-6 6 6 6"/>`,
     arrowDown: `<path d="M12 5v14M6 13l6 6 6-6"/>`,

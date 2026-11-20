@@ -95,7 +95,7 @@ function load(code) {
     if (at < 0) throw nodeError("\u0E42\u0E1B\u0E23\u0E41\u0E01\u0E23\u0E21\u0E15\u0E49\u0E2D\u0E07\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E23\u0E39\u0E1B 'function program() { ... }' \u0E17\u0E31\u0E49\u0E07\u0E44\u0E1F\u0E25\u0E4C");
     const source = `${code.slice(0, at)}return { __init: typeof initialization === "function" ? initialization : undefined, __migrate: typeof migrate === "function" ? migrate : undefined, ${code.slice(at + "return {".length)}`;
     const names = [ "readDB", "writeDB", "deleteDB", "map", "runProgram", "transferNative", "setMetadata", "emit", "keccak256", "keccak256Bytes",
-        "ecrecoverDigest", "eip712Digest", "eip712DomainSeparator", "ThisAddress", "ThisBalance", "BalanceOf", "IsProgram", "MetadataOf", "BlockNumber", "ChainId" ];
+        "ecrecoverDigest", "eip712Digest", "eip712DomainSeparator", "ThisAddress", "ThisBalance", "BalanceOf", "IsProgram", "MetadataOf", "BlockNumber", "ChainId", "BaseFee" ];
     // eslint-disable-next-line no-new-func
     const factory = new Function("api", `"use strict"; const { ${names.join(", ")} } = api; return (${source})();`);
     compiled.set(code, factory);
@@ -168,6 +168,7 @@ function run({ layer, tx, program, method, input, context, value = 0n, isInit = 
         MetadataOf: (a, field) => copy(frame.get("programs", lower(a))?.metadata?.[field] ?? null),
         BlockNumber: () => BigInt(tx.blockNumber),
         ChainId: () => BigInt(CHAIN_ID),
+        BaseFee: () => BASE_FEE,
     };
     frame.events = [];
     const exported = load(info.code)(api);
