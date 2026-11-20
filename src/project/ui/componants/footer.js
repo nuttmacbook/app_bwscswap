@@ -18,7 +18,7 @@ const footer = /*html*/`
                 <p class="mt-4 max-w-xs text-[13px] leading-relaxed text-zinc-500">${escapeHtml(settings.tagline)}</p>
                 <p class="mt-4 font-mono text-[12px] text-zinc-600">Chain ID ${settings.chainId}</p>
             </div>
-            ${column("Apps", [ [ "All apps", "#/apps" ], [ "Swap", "#/swap" ], [ "Limit orders", "#/limit" ], [ "Pool", "#/pool" ], [ "Bridge", "#/bridge" ], [ "Stake", "#/stake" ] ])}
+            ${column("Apps", [ [ "All apps", "#/apps" ], [ "Swap", "#/swap" ], [ "Limit orders", "#/limit" ], [ "Pool", "#/pool" ], [ "Bridge", "#/bridge" ], [ "Stake", "#/stake" ], [ "Multi transfer", "#/send" ] ])}
             ${column("Developers", [ [ "Docs", "#/docs" ], [ "Your first program", "#/docs?p=first-program" ], [ "Build an app", "#/docs?p=reading" ], [ "HTTP API", "#/docs?p=http-api" ] ])}
             ${column("Network", [ [ "Network and wallets", "#/docs?p=network" ], [ "Blocks and fees", "#/docs?p=fees" ], ...(settings.explorerUrl ? [ [ "Explorer", settings.explorerUrl, true ] ] : []) ])}
         </div>

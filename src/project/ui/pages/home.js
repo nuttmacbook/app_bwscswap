@@ -27,6 +27,7 @@ const ICON = {
     bridge: `<path d="M3 17h18M5 17V9M19 17V9M3 9c3 0 6-3 9-3s6 3 9 3M9 17v-5M15 17v-5"/>`,
     arrow: `<path d="M5 12h14M13 6l6 6-6 6"/>`,
     limit: `<path d="M4 7h13l-3-3M20 17H7l3 3"/>`,
+    send: `<circle cx="5" cy="12" r="2"/><path d="M7 12h3c2 0 3-6 6-6h4M10 12c2 0 3 6 6 6h4M10 12h10M17 3l3 3-3 3M17 15l3 3-3 3"/>`,
     out: `<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"/>`,
 };
 

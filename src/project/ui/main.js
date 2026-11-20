@@ -27,6 +27,8 @@ import { appsPage, appPage, appsCategory, appsSort, appsBadge, appsMore, appsSea
 import { openSearch, listenForSearchKeys } from "./componants/search";
 import { copyCode } from "./code";
 import { docsPage, docsSearch, docsMenu, docsCloseMenu, docsJump } from "./pages/docs";
+import * as send from "./pages/send";
+import { multiSend } from "../chain";
 
 /* ------------------------------------ 1. pages (the first one opens by default; others at #/name) */
 
@@ -48,6 +50,8 @@ const pages = {
     app: { load: async () => ({}), view: appPage, loading: () => "", error: () => "" },
     // Limit orders: coins + markets (pages of 200 in parallel), the chosen market's orders, the Swap price to compare
     limit: { load: limit.loadLimit, view: limit.limitPage, loading: limit.limitLoadingOf("the order books"), error: limit.limitError },
+    // Multi transfer: one read (the chosen coin's balance and allowance, the limit per transaction, the base fee)
+    send: { load: send.loadSend, view: send.sendPage, loading: send.sendLoading, error: send.sendError },
     stake: { load: getStakeData, view: stakePage, loading: stakeLoadingOf("the pools"), error: stakeError },
 };
 
@@ -325,3 +329,26 @@ window.docsSearch = docsSearch;
 window.docsMenu = () => { docsMenu(); repaint(); };
 window.docsCloseMenu = docsCloseMenu;
 window.docsJump = docsJump;
+
+/* ------------------------------------ multi transfer */
+
+const S = send;
+Object.assign(window, {
+    sendText: S.sendText,
+    sendSameAmount: S.sendSameAmount,
+    sendSame: () => { S.sendSame(); repaint(); },
+    sendClear: () => { S.sendClear(); repaint(); },
+    sendExample: () => { S.sendExample(); repaint(); },
+    sendMerge: () => { S.sendMerge(); repaint(); },
+    sendPickCoin: () => S.sendPickCoin(repaint),
+    sendFile: (input) => S.sendFile(input, repaint).catch((err) => notify.error(err)),
+});
+window.sendSubmit = () => {
+    let order;
+    try { order = S.sendOrder(); } catch (err) { return notify.error(err); }
+    const wallets = order.rows.length;
+    return app.runTx((wallet, options) => multiSend(wallet, order, { ...options, onBatch: S.sendBatchDone }).finally(() => repaint()), {
+        title: "Transfer done",
+        desc: `Every wallet in the list got its amount (${wallets.toLocaleString("en-US")} wallet${wallets === 1 ? "" : "s"}).`,
+    });
+};

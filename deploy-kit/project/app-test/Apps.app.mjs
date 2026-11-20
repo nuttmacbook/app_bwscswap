@@ -101,7 +101,7 @@ export default async function (t) {
         const { page, errors } = await t.open("#/");
         await page.waitForSelector("[data-home-apps]");
         const nav = await page.innerText("header nav");
-        t.check("menu: Apps · Trade · Bridge · Stake · Docs (+ Explorer)", /Apps\s+Trade\s+Bridge\s+Stake\s+Docs/.test(nav), nav.replace(/\s+/g, " "));
+        t.check("menu: Apps · Trade · Bridge · Stake · Send · Docs (+ Explorer)", /Apps\s+Trade\s+Bridge\s+Stake\s+Send\s+Docs/.test(nav), nav.replace(/\s+/g, " "));
         t.check("home: the hero leads to the apps", (await page.innerText("[data-hero-apps]")).includes("Explore apps"));
         const home = await page.innerText("[data-home-apps]");
         t.check("home: apps as a summary: the count and categories (Games 4)", home.includes("Games") && /4\s+Games/.test(home));

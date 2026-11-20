@@ -17,7 +17,7 @@ export default async function (t) {
         t.check("docs: no reads from the chain", reads.total === 0, JSON.stringify(reads.calls));
         const links = await page.locator("[data-docs-nav] [data-docs-link]").count();
         const nav = await page.innerText("[data-docs-nav]");
-        t.check("docs: the sidebar lists every page in its group", links === 20 && [ "Getting started", "Using the apps", "Programs", "Build apps", "Reference" ].every((g) => nav.toLowerCase().includes(g.toLowerCase())), String(links));
+        t.check("docs: the sidebar lists every page in its group", links === 21 && [ "Getting started", "Using the apps", "Programs", "Build apps", "Reference" ].every((g) => nav.toLowerCase().includes(g.toLowerCase())), String(links));
 
         // Search narrows the sidebar
         await page.fill("[data-docs-search]", "event");

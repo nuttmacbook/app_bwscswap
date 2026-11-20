@@ -23,6 +23,12 @@ const LimitProgram = {
     functions: [ "placeOrder", "fill", "cancel", "addCoin", "setCoin", "withdrawFees", "getView", "getMarket", "getOrdersOf" ],
 };
 
+const MultiSendProgram = {
+    name: "BwscMultiSend",
+    address: addressOrZero(config.programs?.multisend),
+    functions: [ "send", "getView" ],
+};
+
 const BridgeProgram = {
     name: "BwscBridge",
     address: addressOrZero(config.programs?.bridge),
@@ -32,4 +38,4 @@ const BridgeProgram = {
 /** wBWSC (address comes from the exchange's view: the one it really uses) */
 const wrappedProgramAt = (address) => ({ name: "wBWSC", address, functions: [ "deposit", "withdraw" ] });
 
-export { DexProgram, StakingProgram, LimitProgram, BridgeProgram, wrappedProgramAt };
+export { DexProgram, StakingProgram, LimitProgram, MultiSendProgram, BridgeProgram, wrappedProgramAt };

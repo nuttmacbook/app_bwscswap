@@ -36,6 +36,7 @@ export default {
         dex: "0x49e79ee25dcd834fc4b32317604e702760992422",          // BwscDex: every swap pair
         staking: "0xd76511e694ac1db3feb6e77b2f7461b81f1bb08a",      // BwscStaking: every stake pool
         limit: "0xc1dfaf06b56fb3b38f13ece2e93cb07904475b1c",        // BwscLimit: limit orders (coin for coin at your price)
+        multisend: "",    // BwscMultiSend: multi transfer (one coin to many wallets): deploy-kit/README.md step 4c
         bridge: "0x73a504d7dd9f60ba8fd24f41a27f11e537bfd4f3",       // BwscBridge: the bridge hub
     },
 

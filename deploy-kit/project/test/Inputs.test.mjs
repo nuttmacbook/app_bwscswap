@@ -48,7 +48,7 @@ export default async function (t) {
     };
 
     const files = fs.readdirSync(INPUTS).filter((f) => f.endsWith(".json")).sort();
-    t.check("inputs/: one file per BWSC deploy step, in order", files.join() === "1-USDT.json,2-wBWSC.json,3-BwscDex.json,4-BwscStaking.json,4b-BwscLimit.json,8-BwscBridge.json", files.join(", "));
+    t.check("inputs/: one file per BWSC deploy step, in order", files.join() === "1-USDT.json,2-wBWSC.json,3-BwscDex.json,4-BwscStaking.json,4b-BwscLimit.json,4c-BwscMultiSend.json,8-BwscBridge.json", files.join(", "));
     t.check("every program in bwsc/ starts with function program() { (nothing before it)", fs.readdirSync(path.resolve(INPUTS, "..")).filter((f) => f.endsWith(".js")).every((f) => fs.readFileSync(path.resolve(INPUTS, "..", f), "utf8").startsWith("function program() {")));
 
     /* ------------------------------------ BWSC steps 1–4 */
@@ -65,6 +65,10 @@ export default async function (t) {
     const limit = await deploy("BwscLimit", inputOf("4b-BwscLimit.json", { YOUR_WALLET: me, USDT_ON_BWSC_ADDRESS: usdt, wBWSC_ADDRESS: wbwsc }), { upgrader: me });
     const lv = await t.read(limit, "getView", { account: "", offset: 0n, limit: 1n });
     t.check("step 4b: BwscLimit owned by you, the native coin, USDT and wBWSC listed at 0.1%", lv.owner === me && lv.coins.length === 3 && lv.coins.every((c) => c.feeBps === 10n && c.enabled) && lv.coins.at(1).token === usdt && lv.coins.at(2).symbol === "wBWSC");
+
+    const multi = await deploy("BwscMultiSend", inputOf("4c-BwscMultiSend.json", {}));
+    const mv = await t.read(multi, "getView", { account: me, token: usdt });
+    t.check("step 4c: BwscMultiSend (no upgrader): 200 wallets per transaction, reads your USDT", mv.maxTransfers === 200n && mv.balance === units("1000000000") && mv.symbol === "USDT");
 
     /* ------------------------------------ BSC steps 5–7 (Remix), when anvil is installed */
 

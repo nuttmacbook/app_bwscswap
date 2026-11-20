@@ -13,6 +13,9 @@ export { getStakeData, pendingAt, stakeTokens, claimStake, addStakeReward, creat
 // Limit orders: coin for coin at the maker's price (every coin and market read in pages); owner: coins and fees
 export { getLimitData, getMyOrders, placeLimitOrder, fillLimitOrder, cancelLimitOrder, addLimitCoin, setLimitCoin, withdrawLimitFees, priceFor, amountForBudget, rateOf } from "./limit";
 
+// Multi transfer: one coin (native or token) to many wallets, in batches of up to 200 a transaction
+export { getSendData, parseList, mergeDuplicates, batchesOf, feeEstimate, feeCeiling, multiSend } from "./multisend";
+
 // Bridge: BWSC hub ↔ every chain in settings/config.js
 export { getBridgeData, bridgeTokens, claimBridge } from "./bridge";
 

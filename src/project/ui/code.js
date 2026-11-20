@@ -62,7 +62,7 @@ function highlight(code, lang = "js") {
     return out;
 }
 
-const LANG = { js: "JavaScript", json: "JSON", sh: "Terminal" };
+const LANG = { js: "JavaScript", json: "JSON", sh: "Terminal", csv: "CSV" };
 
 /**
  * A code block: a header (file name, language, Copy) over numbered, highlighted lines.
