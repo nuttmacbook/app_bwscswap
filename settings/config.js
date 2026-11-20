@@ -15,7 +15,7 @@ export default {
         tagline: "Smart contracts in plain JavaScript.",
         description: "BWSC is a blockchain whose programs you can read like any JavaScript file. Every transaction is checked before it is queued, and the wallet you already use signs it in readable fields. Swap, bridge and stake are live on it today.",
         // Public address of the site (no trailing slash): link previews, and the only site the bridge signer answers
-        siteUrl: "https://swap.example.com",
+        siteUrl: "https://appbwscswap.vercel.app",
     },
 
     /* ------------------------------------------------------------ BWSC: the chain the site runs on (the bridge hub) */
@@ -118,7 +118,8 @@ export default {
             short: "BSC",
             name: "BNB Smart Chain",
             chainId: 56,
-            rpcUrl: "https://bsc-dataseed.bnbchain.org",
+            // Must answer eth_getLogs (the relayer reads BridgeIn events): bsc-dataseed.* refuses it
+            rpcUrl: "https://bsc-rpc.publicnode.com",
             explorerUrl: "https://bscscan.com",
             native: { symbol: "BNB", name: "BNB", decimals: 18 },
             bridge: "0x3Bb85299a595c9B80F7dA1777a26A1dDF0105e45",
@@ -135,7 +136,7 @@ export default {
 
     /* ------------------------------------------------------------ the bridge signer (bridge-signer/, on your server) */
     bridgeSigner: {
-        url: "https://signer.example.com",
+        url: "https://appbwscswap-production.up.railway.app",
         // Automatic delivery: the signer's relayer sends every claim itself and pays its gas, so users only press
         // "Bridge" and the coins arrive. false = users press "Claim" on the bridge page themselves.
         autoDeliver: true,
