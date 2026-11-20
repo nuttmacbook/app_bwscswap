@@ -1,0 +1,7 @@
+# Docker images (bridge-signer/Dockerfile) never get these: secrets, local state, build output, packages
+**/.env
+**/relayer-state.json*
+**/node_modules
+dist
+deploy-kit/generated
+.git
