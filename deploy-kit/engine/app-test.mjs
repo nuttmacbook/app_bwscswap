@@ -285,7 +285,13 @@ async function main() {
             settle: (page) => page.waitForTimeout(800),
 
             /** Reads of the current page: { page, total, rounds, calls } */
-            reads: (page) => page.evaluate(() => ({ page: window.rpcMeter?.page, total: window.rpcMeter?.total, rounds: window.rpcMeter?.rounds, calls: { ...window.rpcMeter?.calls } })),
+            // The header's coin price ("Price.*": one read shared by every page, at most every 30 s) is counted apart,
+            // so `total` is the page's own reads
+            reads: (page) => page.evaluate(() => {
+                const calls = { ...window.rpcMeter?.calls };
+                const shared = Object.entries(calls).filter(([ k ]) => k.startsWith("Price.")).reduce((s, [ k, n ]) => { delete calls[k]; return s + n; }, 0);
+                return { page: window.rpcMeter?.page, total: (window.rpcMeter?.total ?? 0) - shared, shared, rounds: window.rpcMeter?.rounds, calls };
+            }),
 
             /** Thai letters in the page (the UI must be English; the test panel is skipped) */
             thai: (page) => page.evaluate((source) => {

@@ -1,12 +1,46 @@
-import { shortAddress, escapeHtml } from "../../../engine/ui/helpers";
-import { settings } from "../../../engine/settings";
+import { shortAddress, escapeHtml, fromUnits } from "../../../engine/ui/helpers";
+import { settings, config } from "../../../engine/settings";
 import { icon as line } from "../icons";
+import { coinPrice, loadCoinPrice } from "../../chain/coinPrice";
 
 /*
  * YOUR CODE (off-chain). Top bar (logo, pages, search, wallet) and, on phones, a tab bar at the bottom.
  * Pages: Apps (the chain's directory) · Trade (Swap, Limit orders, Pool: tabs on those pages) · Bridge · Stake · Send · Docs.
- * The logo goes home.
+ * The logo goes home. Under the chain's name: the coin's price from the exchange (chain/coinPrice.js); the line stays
+ * hidden until there is a price (no pool yet, or an empty one).
  */
+
+/**
+ * Exact price → short text. 1 and above: 2 decimals with commas ($1,234.56). Below 1: 4 significant digits
+ * ($0.0003024). Dollar sign when the unit is a dollar stablecoin (USDT, USDC …), else the unit after the number.
+ */
+function priceText(p) {
+    const [ whole, frac = "" ] = fromUnits(p.value, p.decimals).split(".");
+    let text;
+    if (whole !== "0") text = `${BigInt(whole).toLocaleString("en-US")}.${(frac + "00").slice(0, 2)}`;
+    else {
+        const lead = frac.match(/^0*/)[0].length;
+        text = `0.${frac.slice(0, lead + 4).replace(/0+$/, "") || "0"}`;
+    }
+    return /USD/i.test(p.unit) ? `$${text}` : `${text} ${p.unit}`;
+}
+
+const SYMBOL = config.hub?.native?.symbol ?? "";
+
+/** The price line's inside (or nothing yet) */
+const priceInner = (p) => (p ? `<span class="text-zinc-500">${escapeHtml(SYMBOL)}</span><span class="font-mono text-brand-200">${escapeHtml(priceText(p))}</span>` : "");
+
+/** Fills every price line on the page (after a read; nothing is redrawn) */
+function paintPrice(p) {
+    for (const el of document.querySelectorAll("[data-coin-price]")) {
+        el.innerHTML = priceInner(p);
+        el.classList.toggle("hidden", !p);
+        el.setAttribute("title", p ? `${SYMBOL} price from the ${SYMBOL} / ${p.unit} pool` : "");
+    }
+}
+
+/** Reads the price when it is older than 30 s (one shared read, never per page) and fills the line */
+const refreshPrice = (opts) => loadCoinPrice(opts).then(paintPrice);
 
 const ICONS = {
     docs: `<path d="M6 4h9l3 3v13H6zM14 4v4h4M9 12h6M9 16h6"/>`,
@@ -41,6 +75,8 @@ const header = (data) => {
     const isDemo = Boolean(data?.wallet?.isDemo);
     const isWrongChain = isConnected && !isDemo && data?.wallet?.isRightChain === false;
     const label = isConnected ? shortAddress(address) : "Connect wallet";
+    // The price: shown from memory now, read again in the background when older than 30 s
+    queueMicrotask(() => refreshPrice());
     const page = data?.page ?? "home";
 
     return /*html*/`
@@ -49,7 +85,10 @@ const header = (data) => {
             <!-- Brand -->
             <a href="#/" class="flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
                 <img src="/logo.svg" alt="" class="h-8 w-[30px] shrink-0 object-contain" />
-                <span class="truncate text-[15px] font-semibold tracking-tight text-white sm:text-base">${escapeHtml(settings.appName)}</span>
+                <span class="flex min-w-0 flex-col leading-tight">
+                    <span class="truncate text-[15px] font-semibold tracking-tight text-white sm:text-base">${escapeHtml(settings.appName)}</span>
+                    <span data-coin-price class="flex items-center gap-1.5 text-[11px] ${coinPrice() ? "" : "hidden"}" ${coinPrice() ? `title="${escapeHtml(SYMBOL)} price from the ${escapeHtml(SYMBOL)} / ${escapeHtml(coinPrice().unit)} pool"` : ""}>${priceInner(coinPrice())}</span>
+                </span>
             </a>
 
             <!-- Pages (computer) -->
@@ -92,4 +131,4 @@ const header = (data) => {
     `;
 };
 
-export { header };
+export { header, refreshPrice };
