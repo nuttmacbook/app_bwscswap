@@ -24,10 +24,11 @@ const lower = (a) => String(a ?? "").toLowerCase();
 const isReady = () => MultiSendProgram.address !== ZERO;
 const reader = () => metered(box.createReader(MultiSendProgram), "BwscMultiSend");
 
-// Gas measured on the node (deploy-kit/project/test/BwscMultiSend.test.mjs): about 2,700 + 1,310 a wallet for the
-// native coin and 3,500 + 4,490 a wallet for a token. Limits are set a quarter higher; you pay the gas really used.
-const gasUsedOf = (count, isNative) => (isNative ? 2_700n + 1_310n * BigInt(count) : 3_500n + 4_490n * BigInt(count));
-const gasLimitOf = (count, isNative) => 20_000n + (gasUsedOf(count, isNative) * 5n) / 4n;
+// Gas measured on a node with the Bluewolfchain gas table (deploy-kit/project/test/BwscMultiSend.test.mjs):
+// about 23,000 + 860 a wallet for the native coin and 25,000 + 10,700 a wallet for a token (200 token wallets ≈ 2.2M).
+// Limits are a third higher plus 20,000; you pay only the gas really used.
+const gasUsedOf = (count, isNative) => (isNative ? 23_000n + 860n * BigInt(count) : 25_000n + 10_700n * BigInt(count));
+const gasLimitOf = (count, isNative) => 20_000n + (gasUsedOf(count, isNative) * 4n) / 3n;
 
 /** One read: the coin's numbers for this wallet (and the program's limit, the base fee) */
 async function getSendData(wallet, token = ZERO, { fresh = false } = {}) {
