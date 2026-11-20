@@ -143,7 +143,7 @@ export default {
         // A little of the destination chain's own coin, sent once to a wallet that has none, with its first delivery
         // of another coin (e.g. USDT in from BSC), so a brand-new wallet can pay its first gas. Whole coins per chain
         // key; "0" = off. The relayer wallet pays it: keep the bridge minimum (`min` of each route) well above it.
-        gasDrop: { bwsc: "0.5", bsc: "0" },
+        gasDrop: { bwsc: "5", bsc: "0" },
     },
 
     /* ------------------------------------------------------------ coins */
