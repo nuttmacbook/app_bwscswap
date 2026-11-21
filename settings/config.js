@@ -15,7 +15,7 @@ export default {
         tagline: "Smart contracts in plain JavaScript.",
         description: "BWSC is a blockchain whose programs you can read like any JavaScript file. Every transaction is checked before it is queued, and the wallet you already use signs it in readable fields. Swap, bridge and stake are live on it today.",
         // Public address of the site (no trailing slash): link previews, and the only site the bridge signer answers
-        siteUrl: "https://appbwscswap.vercel.app",
+        siteUrl: "https://www.bluewolfchain.com",
     },
 
     /* ------------------------------------------------------------ BWSC: the chain the site runs on (the bridge hub) */
