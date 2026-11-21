@@ -5,7 +5,7 @@
     {
       "chainId": "56n",
       "token": "0x0000000000000000000000000000000000000000",
-      "remoteToken": "0x251DbFdb9Eee5Ff3f90B337DcB8fc84E566830a5",
+      "remoteToken": "0xB4C486d1f06b54BFCd83C7e11cab93969B627785",
       "feeBps": "75n",
       "min": "1000000000000000000n"
     },
