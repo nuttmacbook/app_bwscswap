@@ -208,6 +208,37 @@ export default async function (t) {
         await collect(page, errors);
     });
 
+    /* ------------------------------------ fee-free wallets */
+
+    await t.step("bridge: a fee-free wallet", async () => {
+        const { page, errors } = await t.open("#/bridge", { wallet: "demo" });
+        await t.panel(page, false);
+        const me = await demoAddress(page);
+        // The owner makes the demo wallet fee-free on both bridges
+        await t.send(t.owner, "BwscBridge", "setFeeExempt", { account: me, exempt: true });
+        const bscBridge = new ethers.Contract(addresses.BwscBridgeEvm, contracts.BwscBridgeEvm.abi, anvil.wallet(0));
+        await (await bscBridge.setFeeExempt(me, true)).wait();
+        await page.reload();
+        await page.waitForSelector("[data-bridge-in]");
+        await pickToken(page, "USDT");
+        await page.fill("[data-bridge-in]", "100");
+        const out = await page.innerText("[data-bridge-summary]");
+        t.check("fee-free: BWSC → BSC shows no fee and the whole 100 arriving", /Bridge fee\s+None: fee-free wallet/.test(out) && /You receive\s+100 USDT/.test(out), out.replace(/\s+/g, " ").slice(0, 160));
+        await page.click("[aria-label='Switch direction']");
+        await page.waitForTimeout(300);
+        await page.fill("[data-bridge-in]", "100");
+        const back = await page.innerText("[data-bridge-summary]");
+        t.check("fee-free: BSC → BWSC too (read from the BSC bridge)", (await fromChain(page)) === "bsc" && /Bridge fee\s+None: fee-free wallet/.test(back) && /You receive\s+100 USDT/.test(back), back.replace(/\s+/g, " ").slice(0, 160));
+        await t.send(t.owner, "BwscBridge", "setFeeExempt", { account: me, exempt: false });
+        await (await bscBridge.setFeeExempt(me, false)).wait();
+        await page.reload();
+        await page.waitForSelector("[data-bridge-in]");
+        await pickToken(page, "USDT");
+        await page.fill("[data-bridge-in]", "100");
+        t.check("fee-free off: the fee is back", /Bridge fee\s+0\.1%/.test(await page.innerText("[data-bridge-summary]")));
+        await collect(page, errors);
+    });
+
     /* ------------------------------------ layout */
 
     await t.step("bridge layout", async () => {

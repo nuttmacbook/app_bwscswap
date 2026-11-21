@@ -26,6 +26,7 @@ pragma solidity 0.8.37;
  * Money per token: held = what this contract keeps for it = deposits + liquidity - paid claims - taken out.
  * fees (part of held) belong to the owner; claims and removeLiquidity can use held - fees.
  * Paused = no bridging and no claims (an emergency switch, e.g. for a lost signer key).
+ * Fee-free wallets: setFeeExempt(account, true) = that wallet's bridgeIn pays no fee (every token). Owner only.
  * Coins sent here without addLiquidity are not liquidity: sendOutExtraNative / sendOutExtraToken send back only what is
  * above `held`, never the bridge's own money.
  *
@@ -96,6 +97,7 @@ contract BridgeStorage is BridgeConstant {
 
     address _previous;          // the bridge this one replaces (0x0 = none)
     bool _migrating;            // true until closeMigration(): totals can still be imported from _previous
+    mapping (address => bool) _feeExempt;   // wallets whose bridgeIn pays no fee
 }
 
 contract BwscBridgeEvm is BridgeStorage {
@@ -130,6 +132,7 @@ contract BwscBridgeEvm is BridgeStorage {
         uint256 maxFeeBps;
         uint256 routeCount;
         RouteView[] routes;
+        bool feeExempt;         // the account asked about pays no bridge fee
     }
 
     event BridgeIn(address indexed account, address indexed token, uint256 amount, uint256 fee, uint256 total);
@@ -145,6 +148,7 @@ contract BwscBridgeEvm is BridgeStorage {
     event ExtraTokenSentOut(address indexed token, address indexed to, uint256 amount);
     event AccountImported(address indexed account, address indexed token, uint256 bridgedIn, uint256 claimedOut);
     event MigrationClosed(address previous);
+    event FeeExemptSet(address indexed account, bool exempt);
 
     modifier onlyOwner() {
         require(_owner == msg.sender, "Only Owner");
@@ -207,7 +211,7 @@ contract BwscBridgeEvm is BridgeStorage {
 
         // Count what really arrived (a token that takes a fee on transfer gives less)
         uint256 received = _take(token, msg.sender, amount);
-        uint256 fee = (received * t.feeBps) / BPS;
+        uint256 fee = _feeExempt[msg.sender] ? 0 : (received * t.feeBps) / BPS;
         uint256 net = received - fee;
 
         _bridgedIn[msg.sender][token] += net;
@@ -279,6 +283,13 @@ contract BwscBridgeEvm is BridgeStorage {
      */
     function setRoute(address token, address remoteToken, bool enabled, uint256 feeBps, uint256 min) public onlyOwner {
         _setRoute(token, remoteToken, enabled, feeBps, min);
+    }
+
+    /** A wallet that pays no bridge fee (true) or pays it again (false) */
+    function setFeeExempt(address account, bool exempt) public onlyOwner {
+        require(account != ZERO, "Zero Account");
+        _feeExempt[account] = exempt;
+        emit FeeExemptSet(account, exempt);
     }
 
     function setSigner(address newSigner) public onlyOwner {
@@ -429,6 +440,7 @@ contract BwscBridgeEvm is BridgeStorage {
     function version() public pure returns (uint256) { return VERSION; }
     function previousBridge() public view returns (address) { return _previous; }
     function migrating() public view returns (bool) { return _migrating; }
+    function isFeeExempt(address account) public view returns (bool) { return _feeExempt[account]; }
     function tokenList() public view returns (address[] memory) { return _tokenList; }
     function bridgedInOf(address account, address token) public view returns (uint256) { return _bridgedIn[account][token]; }
     function claimedOutOf(address account, address token) public view returns (uint256) { return _claimedOut[account][token]; }
@@ -456,6 +468,7 @@ contract BwscBridgeEvm is BridgeStorage {
         v.signer = _signer;
         v.paused = _paused;
         v.maxFeeBps = MAX_FEE_BPS;
+        v.feeExempt = _feeExempt[account];
         uint256 count = _tokenList.length;
         v.routeCount = count;
         uint256 end = offset + limit > count ? count : offset + limit;

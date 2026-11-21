@@ -80,13 +80,13 @@ async function readChain(c, who, fresh) {
         views.push(v);
         if (offset + PAGE >= big(v.routeCount)) break;
     }
-    return { chainId: Number(views[0].chainId), remoteChainId: Number(views[0].remoteChainId), paused: views[0].paused, routes: views.flatMap((v) => [ ...v.routes ]) };
+    return { chainId: Number(views[0].chainId), remoteChainId: Number(views[0].remoteChainId), paused: views[0].paused, feeExempt: views[0].feeExempt === true, routes: views.flatMap((v) => [ ...v.routes ]) };
 }
 
 /**
  * Everything the bridge page needs.
  * @returns {{ isReady, missing, chains: [{ ...chain, problem, paused }], routes: [{ id, chain, hub, remote, waitingIn, waitingOut }] }}
- *   hub / remote: { coin, address, isNative, enabled, feeBps, min, balance, allowance, available, … running totals }
+ *   hub / remote: { coin, address, isNative, enabled, feeBps (0 for a fee-free wallet), feeFree, min, balance, allowance, available, … running totals }
  *   waitingIn  = chain → BWSC, claimable on BWSC · waitingOut = BWSC → chain, claimable on that chain
  */
 async function getBridgeData(wallet, { fresh = false } = {}) {
@@ -118,12 +118,12 @@ async function getBridgeData(wallet, { fresh = false } = {}) {
         const hc = hubCoins.get(lower(r.token)) ?? {};
         const hubSide = {
             coin: coinOf(HUB, { address: r.token, symbol: hc.symbol, name: hc.name, decimals: Number(hc.decimals ?? 18), balance: big(hc.balance) }),
-            address: lower(r.token), isNative: lower(r.token) === ZERO, enabled: r.enabled === true, feeBps: Number(r.feeBps), min: big(r.min),
+            address: lower(r.token), isNative: lower(r.token) === ZERO, enabled: r.enabled === true, feeBps: hub.feeExempt === true ? 0 : Number(r.feeBps), feeFree: hub.feeExempt === true, min: big(r.min),
             balance: big(hc.balance), allowance: big(hc.allowance), available: big(hc.available), bridgedOut: big(r.bridgedOut), claimedIn: big(r.claimedIn),
         };
         const remoteSide = {
             coin: coinOf(c.key, { address: e.token, symbol: e.symbol, decimals: Number(e.decimals), balance: big(e.balance) }),
-            address: lower(e.token), isNative: e.isNative, enabled: e.enabled, feeBps: Number(e.feeBps), min: big(e.min),
+            address: lower(e.token), isNative: e.isNative, enabled: e.enabled, feeBps: c.view.feeExempt ? 0 : Number(e.feeBps), feeFree: c.view.feeExempt === true, min: big(e.min),
             balance: big(e.balance), allowance: big(e.allowance), available: big(e.available), bridgedIn: big(e.bridgedIn), claimedOut: big(e.claimedOut),
         };
         routes.push({

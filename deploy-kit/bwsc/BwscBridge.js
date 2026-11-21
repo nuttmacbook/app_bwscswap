@@ -24,6 +24,7 @@ function program() {
    * Money: every coin here keeps `held` = locked deposits + liquidity − paid claims − taken out. `fees` (part of held)
    * belong to the owner; claims and removeLiquidity can use held − fees. Paused = no bridging and no claims.
    * Owner: setRoute (add / change a route), add / remove liquidity, withdrawFees, setSigner, setPaused, transferOwnership.
+   * Fee-free wallets: setFeeExempt(account, true) = that wallet's bridgeOut pays no fee (every coin, every chain).
    * Coins sent here by a plain transfer are not liquidity (only addLiquidity counts): sendOutExtraNative and
    * sendOutExtraToken send back what is above `held`, never the bridge's own money.
    *
@@ -46,6 +47,8 @@ function program() {
       { name: "removeLiquidity", inputs: [{ name: "token", type: "address" }, { name: "amount", type: "uint" }, { name: "to", type: "address" }], outputs: [] },
       { name: "withdrawFees", inputs: [{ name: "token", type: "address" }, { name: "to", type: "address" }], outputs: [{ name: "amount", type: "uint" }] },
       { name: "setRoute", inputs: [{ name: "chainId", type: "uint" }, { name: "token", type: "address" }, { name: "remoteToken", type: "address" }, { name: "enabled", type: "bool" }, { name: "feeBps", type: "uint" }, { name: "min", type: "uint" }], outputs: [], description: "Owner: add or change a route" },
+      { name: "setFeeExempt", inputs: [{ name: "account", type: "address" }, { name: "exempt", type: "bool" }], outputs: [], description: "Owner: this wallet pays no bridge fee (true) or pays it again (false)" },
+      { name: "isFeeExempt", inputs: [{ name: "account", type: "address" }], outputs: [{ name: "exempt", type: "bool" }], readonly: true },
       { name: "setSigner", inputs: [{ name: "signer", type: "address" }], outputs: [] },
       { name: "setPaused", inputs: [{ name: "paused", type: "bool" }], outputs: [] },
       { name: "transferOwnership", inputs: [{ name: "owner", type: "address" }], outputs: [] },
@@ -64,6 +67,7 @@ function program() {
       { name: "LiquidityRemoved", fields: [{ name: "token", type: "address", indexed: true }, { name: "amount", type: "uint" }, { name: "to", type: "address" }] },
       { name: "FeesWithdrawn", fields: [{ name: "token", type: "address", indexed: true }, { name: "amount", type: "uint" }, { name: "to", type: "address" }] },
       { name: "RouteSet", fields: [{ name: "chainId", type: "uint" }, { name: "token", type: "address", indexed: true }, { name: "remoteToken", type: "address" }, { name: "enabled", type: "bool" }, { name: "feeBps", type: "uint" }, { name: "min", type: "uint" }] },
+      { name: "FeeExemptSet", fields: [{ name: "account", type: "address", indexed: true }, { name: "exempt", type: "bool" }] },
       { name: "SignerChanged", fields: [{ name: "from", type: "address" }, { name: "to", type: "address" }] },
       { name: "Paused", fields: [{ name: "paused", type: "bool" }] },
       { name: "ExtraSentOut", fields: [{ name: "token", type: "address", indexed: true }, { name: "amount", type: "uint" }, { name: "to", type: "address" }] },
@@ -207,7 +211,7 @@ function program() {
     if (amount < r.min) throw new Error("Below the smallest transfer")
     // Count what really arrived (the guard above keeps anyone from coming back in meanwhile)
     const received = take(params, token, amount)
-    const fee = (received * r.feeBps) / BPS
+    const fee = isExempt(String(who).toLowerCase()) ? 0n : (received * r.feeBps) / BPS
     const net = received - fee
     addTo("bridgedOut", totalKey(who, chainId, token), net)
     addTo("held", token, received)
@@ -284,6 +288,15 @@ function program() {
     saveRoute(i.chainId, i.token, i.remoteToken, i.enabled === true, i.feeBps, i.min)
   })
 
+  const isExempt = (account) => readDB(map("feeExempt", account)) === true
+
+  const setFeeExempt = onlyOwner(function (params) {
+    const account = requireAddress(params.input.account, "account")
+    const exempt = params.input.exempt === true
+    writeDB(map("feeExempt", account), exempt)
+    emit("FeeExemptSet", { account: account, exempt: exempt }, { indexed: ["account"] })
+  })
+
   const setSigner = onlyOwner(function (params) {
     const next = requireAddress(params.input.signer, "signer")
     emit("SignerChanged", { from: readDB("signer"), to: next })
@@ -332,6 +345,10 @@ function program() {
 
   function claimedInOf(params) {
     return readDB(map("claimedIn", totalKey(requireToken(params.input.account, "account"), params.input.chainId, requireToken(params.input.token, "token")))) || 0n
+  }
+
+  function isFeeExempt(params) {
+    return isExempt(requireAddress(params.input.account, "account"))
   }
 
   function getRoute(params) {
@@ -392,6 +409,7 @@ function program() {
       owner: readDB("owner"),
       signer: readDB("signer"),
       paused: readDB("paused") === true,
+      feeExempt: account ? isExempt(account) : false,
       maxFeeBps: MAX_FEE_BPS,
       domain: { name: DOMAIN_NAME, version: DOMAIN_VERSION },
       routeCount: count,
@@ -401,5 +419,5 @@ function program() {
     }
   }
 
-  return { bridgeOut, claimIn, addLiquidity, removeLiquidity, withdrawFees, setRoute, setSigner, setPaused, transferOwnership, sendOutExtraNative, sendOutExtraToken, bridgedOutOf, claimedInOf, getRoute, claimDigest, getView }
+  return { bridgeOut, claimIn, addLiquidity, removeLiquidity, withdrawFees, setRoute, setFeeExempt, setSigner, setPaused, transferOwnership, sendOutExtraNative, sendOutExtraToken, bridgedOutOf, claimedInOf, isFeeExempt, getRoute, claimDigest, getView }
 }
