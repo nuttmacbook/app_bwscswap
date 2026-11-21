@@ -3,7 +3,8 @@ pragma solidity 0.8.37;
 
 /*
  * YOUR CODE. The EVM side of the bridge (BSC today; deploy the same file on any other EVM chain later).
- * BWSC is the hub: every EVM chain bridges with BWSC. Lock and release, running totals. Deployed behind BaseProxyUsed.
+ * BWSC is the hub: every EVM chain bridges with BWSC. Lock and release, running totals.
+ * No proxy: deployed as it is and can never be upgraded or changed by anyone, the owner included.
  *
  * Routes: one per token on this chain. token 0x0 = this chain's own coin (BNB on BSC); remoteToken 0x0 = BWSC's native coin.
  *   e.g. BSC-USD -> USDT on BWSC · BWSC (BEP-20) -> native BWSC · BNB -> wBNB on BWSC. setRoute adds or changes one.
@@ -18,16 +19,24 @@ pragma solidity 0.8.37;
  *                             account. Anyone may send it: the coins always go to `account`. An old signature (smaller
  *                             total) pays nothing, so a signature can never pay twice.
  *
- * Signature: EIP-712, bound to this chain and this contract (the proxy address):
+ * Signature: EIP-712, bound to this chain and this contract:
  *   domain  { name: "BwscBridge", version: "2", chainId: this chain, verifyingContract: this }
  *   Claim   { account: address, sourceChainId: uint256 (BWSC), token: address (paid HERE), total: uint256 }
  *
  * Money per token: held = what this contract keeps for it = deposits + liquidity - paid claims - taken out.
  * fees (part of held) belong to the owner; claims and removeLiquidity can use held - fees.
  * Paused = no bridging and no claims (an emergency switch, e.g. for a lost signer key).
+ * Coins sent here without addLiquidity are not liquidity: sendOutExtraNative / sendOutExtraToken send back only what is
+ * above `held`, never the bridge's own money.
  *
- * Deploy (deploy-kit/README.md): this logic contract, then BaseProxyUsed(logic, initialize calldata).
- * Layout: BridgeConstant (facts of the code) -> BridgeStorage (data, add new variables at the END only) -> BwscBridgeEvm
+ * Moving from an older bridge (constructor `previous_`, 0x0 = a new bridge)
+ *   The running totals of the people who used the old bridge must come along, or they could claim the same coins
+ *   again here (claimedOut would start at 0). While the migration is open this bridge stays paused, and
+ *   importAccounts(accounts) copies each account's bridgedIn and claimedOut FROM THE OLD CONTRACT (anyone may call
+ *   it; nobody can type a number). The old bridge must be paused so its totals no longer move.
+ *   closeMigration() ends it for good; then the owner unpauses.
+ *
+ * Deploy (deploy-kit/README.md): this contract, with the constructor's values.
  */
 
 interface IBridgeERC20 {
@@ -39,8 +48,16 @@ interface IBridgeERC20 {
     function decimals() external view returns (uint8);
 }
 
+/** What this bridge reads from the bridge it replaces (an older BwscBridgeEvm) */
+interface IPreviousBridge {
+    function paused() external view returns (bool);
+    function remoteChainId() external view returns (uint256);
+    function bridgedInOf(address account, address token) external view returns (uint256);
+    function claimedOutOf(address account, address token) external view returns (uint256);
+}
+
 contract BridgeConstant {
-    uint256 constant VERSION = 2000;
+    uint256 constant VERSION = 3000;
     address constant ZERO = address(0);
     uint256 constant BPS = 10_000;
     uint256 constant MAX_FEE_BPS = 500;   // 5% at most, also for the owner
@@ -55,7 +72,6 @@ contract BridgeConstant {
 
 contract BridgeStorage is BridgeConstant {
     address _owner;
-    bool _initialized;
     address _signer;            // the bridge signer: signs claim totals
     bool _paused;
     bool _locked;               // reentrancy guard
@@ -77,6 +93,9 @@ contract BridgeStorage is BridgeConstant {
     address[] _tokenList;
     mapping (address => mapping (address => uint256)) _bridgedIn;   // account => token => running total (after fees)
     mapping (address => mapping (address => uint256)) _claimedOut;  // account => token => claimed total
+
+    address _previous;          // the bridge this one replaces (0x0 = none)
+    bool _migrating;            // true until closeMigration(): totals can still be imported from _previous
 }
 
 contract BwscBridgeEvm is BridgeStorage {
@@ -123,6 +142,9 @@ contract BwscBridgeEvm is BridgeStorage {
     event Paused(bool paused);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event SentOutExtra(address indexed to, uint256 amount);
+    event ExtraTokenSentOut(address indexed token, address indexed to, uint256 amount);
+    event AccountImported(address indexed account, address indexed token, uint256 bridgedIn, uint256 claimedOut);
+    event MigrationClosed(address previous);
 
     modifier onlyOwner() {
         require(_owner == msg.sender, "Only Owner");
@@ -141,36 +163,36 @@ contract BwscBridgeEvm is BridgeStorage {
         _locked = false;
     }
 
-    // The logic contract itself can never be initialized (only the proxy's storage is used)
-    constructor() {
-        _initialized = true;
-    }
-
     /**
-     * Runs once, inside the proxy's constructor. Lists may be empty (add routes later with setRoute).
      * tokens_[i] (on this chain, 0x0 = its own coin) <-> remoteTokens_[i] (on BWSC, 0x0 = BWSC), with its fee and minimum.
+     * Lists may be empty (add routes later with setRoute). previous_ = the bridge this one replaces, or 0x0.
      */
-    function initialize(
+    constructor(
         address owner_,
         address signer_,
         uint256 remoteChainId_,
-        address[] calldata tokens_,
-        address[] calldata remoteTokens_,
-        uint256[] calldata feeBps_,
-        uint256[] calldata mins_
-    ) public payable {
-        require(!_initialized, "Already Initialized");
+        address previous_,
+        address[] memory tokens_,
+        address[] memory remoteTokens_,
+        uint256[] memory feeBps_,
+        uint256[] memory mins_
+    ) {
         require(owner_ != ZERO, "Zero Owner");
         require(signer_ != ZERO, "Zero Signer");
         require(remoteChainId_ != 0 && remoteChainId_ != block.chainid, "Bad Remote Chain");
         require(tokens_.length == remoteTokens_.length && tokens_.length == feeBps_.length && tokens_.length == mins_.length, "Lists Differ In Length");
-        require(msg.value == 0, "No Value");
-        _initialized = true;
         _owner = owner_;
         _signer = signer_;
         _remoteChainId = remoteChainId_;
         for (uint256 i; i < tokens_.length; i++) {
             _setRoute(tokens_[i], remoteTokens_[i], true, feeBps_[i], mins_[i]);
+        }
+        if (previous_ != ZERO) {
+            require(previous_.code.length > 0, "Previous Is Not A Contract");
+            require(IPreviousBridge(previous_).remoteChainId() == remoteChainId_, "Previous Bridge Has Another Remote Chain");
+            _previous = previous_;
+            _migrating = true;
+            _paused = true;
         }
     }
 
@@ -266,6 +288,7 @@ contract BwscBridgeEvm is BridgeStorage {
     }
 
     function setPaused(bool paused_) public onlyOwner {
+        require(paused_ || !_migrating, "Close The Migration First");
         _paused = paused_;
         emit Paused(paused_);
     }
@@ -285,6 +308,57 @@ contract BwscBridgeEvm is BridgeStorage {
         (bool success, ) = to.call{ value: amount }("");
         require(success, "Transfer Failed");
         emit SentOutExtra(to, amount);
+    }
+
+    /** A token sent here without addLiquidity (or one with no route): everything above what its route holds */
+    function sendOutExtraToken(address token, address to) external onlyOwner nonReentrant returns (uint256 amount) {
+        require(token != ZERO, "Use sendOutExtraNative");
+        require(to != ZERO, "Zero Recipient");
+        uint256 held = _routes[token].held;
+        uint256 balance = IBridgeERC20(token).balanceOf(address(this));
+        require(balance > held, "Nothing To Send");
+        amount = balance - held;
+        _call(token, abi.encodeCall(IBridgeERC20.transfer, (to, amount)));
+        emit ExtraTokenSentOut(token, to, amount);
+    }
+
+    /* ------------------------------------ moving from the previous bridge */
+
+    /**
+     * Copies each account's running totals (every route's token) from the previous bridge. Anyone may call it while the
+     * migration is open; the numbers come from the old contract only. Calling it again for an account changes nothing.
+     */
+    function importAccounts(address[] calldata accounts) external {
+        require(_migrating, "No Migration Open");
+        IPreviousBridge previous = IPreviousBridge(_previous);
+        require(previous.paused(), "Pause The Previous Bridge First");
+        uint256 count = _tokenList.length;
+        for (uint256 a; a < accounts.length; a++) {
+            address account = accounts[a];
+            for (uint256 i; i < count; i++) {
+                address token = _tokenList[i];
+                Route storage t = _routes[token];
+                uint256 bridgedIn = previous.bridgedInOf(account, token);
+                uint256 claimedOut = previous.claimedOutOf(account, token);
+                // This bridge stays paused while migrating, so only imports ever set these numbers
+                if (bridgedIn > _bridgedIn[account][token]) {
+                    t.totalBridgedIn += bridgedIn - _bridgedIn[account][token];
+                    _bridgedIn[account][token] = bridgedIn;
+                }
+                if (claimedOut > _claimedOut[account][token]) {
+                    t.totalClaimedOut += claimedOut - _claimedOut[account][token];
+                    _claimedOut[account][token] = claimedOut;
+                }
+                if (bridgedIn > 0 || claimedOut > 0) emit AccountImported(account, token, bridgedIn, claimedOut);
+            }
+        }
+    }
+
+    /** Ends the migration for good (no more imports); the owner may unpause after it */
+    function closeMigration() external onlyOwner {
+        require(_migrating, "No Migration Open");
+        _migrating = false;
+        emit MigrationClosed(_previous);
     }
 
     /* ------------------------------------ inside */
@@ -353,6 +427,8 @@ contract BwscBridgeEvm is BridgeStorage {
     function paused() public view returns (bool) { return _paused; }
     function remoteChainId() public view returns (uint256) { return _remoteChainId; }
     function version() public pure returns (uint256) { return VERSION; }
+    function previousBridge() public view returns (address) { return _previous; }
+    function migrating() public view returns (bool) { return _migrating; }
     function tokenList() public view returns (address[] memory) { return _tokenList; }
     function bridgedInOf(address account, address token) public view returns (uint256) { return _bridgedIn[account][token]; }
     function claimedOutOf(address account, address token) public view returns (uint256) { return _claimedOut[account][token]; }

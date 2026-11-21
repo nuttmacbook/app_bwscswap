@@ -1,7 +1,8 @@
 /*
- * YOUR CODE (contract tests). BwscBridgeEvm (the EVM side, BSC today) on the local BSC (anvil), behind BaseProxyUsed:
- * proxy rules, bridgeIn (tokens and the chain's own coin), claimOut with signed running totals, fees, liquidity,
- * pause, signer change, new routes, upgrade.
+ * YOUR CODE (contract tests). BwscBridgeEvm (the EVM side, BSC today) on the local BSC (anvil), no proxy:
+ * constructor, bridgeIn (tokens and the chain's own coin), claimOut with signed running totals, fees, liquidity,
+ * pause, signer change, new routes, coins sent by mistake, and moving to a new bridge (importAccounts: nobody can
+ * claim twice).
  * Skipped when anvil (Foundry) is not installed.
  */
 
@@ -41,7 +42,6 @@ export default async function (t) {
     const signerKey = new ethers.Wallet(devKey(4));
     const BRIDGE = addresses.BwscBridgeEvm;
     const bridge = (who = owner) => new ethers.Contract(BRIDGE, contracts.BwscBridgeEvm.abi, who);
-    const proxy = (who = owner) => new ethers.Contract(BRIDGE, contracts.BaseProxyUsed.abi, who);
     const erc20 = (address, who = owner) => new ethers.Contract(address, contracts.MockToken.abi, who);
     const USDT = tokens.USDT.address;
     const NATIVE = tokens.tBWSC.address;
@@ -53,22 +53,19 @@ export default async function (t) {
     const gas = async (name, tx) => t.gas(name, { gasUsed: (await tx.wait()).gasUsed });
     const [ aliceAddress, bobAddress ] = [ await alice.getAddress(), await bob.getAddress() ];
 
-    /* ------------------------------------ proxy and settings */
+    /* ------------------------------------ constructor and settings */
 
     const ownerAddress = await owner.getAddress();
-    t.check("proxy admin = owner", (await proxy().admin()).toLowerCase() === ownerAddress.toLowerCase());
-    t.check("owner, signer and BWSC's chain id come from the initialize call", (await bridge().owner()) === ownerAddress && (await bridge().signer()).toLowerCase() === s.SIGNER.toLowerCase() && (await bridge().remoteChainId()) === REMOTE);
+    t.check("no proxy: no initialize, upgradeTo or adminCall, and the bytecode is the contract itself", [ "initialize", "upgradeTo", "adminCall" ].every((f) => bridge().interface.getFunction(f) === null)
+        && (await anvil.provider.getCode(BRIDGE)) === contracts.BwscBridgeEvm.deployedBytecode);
+    t.check("a new bridge: no previous bridge, not migrating, open", (await bridge().previousBridge()) === ZERO && !(await bridge().migrating()) && !(await bridge().paused()) && (await bridge().version()) === 3000n);
+    t.check("owner, signer and BWSC's chain id come from the constructor", (await bridge().owner()) === ownerAddress && (await bridge().signer()).toLowerCase() === s.SIGNER.toLowerCase() && (await bridge().remoteChainId()) === REMOTE);
     const list = (await bridge().tokenList()).map((a) => a.toLowerCase());
     t.check("two tokens: the BWSC coin (BEP-20) and USDT", list.length === 2 && list[0] === NATIVE && list[1] === USDT);
     const nativeCfg = await bridge().getRoute(NATIVE);
     const usdtCfg = await bridge().getRoute(USDT);
     t.check("routes point at the BWSC side (native coin = 0x0, USDT program)", nativeCfg.remoteToken === ZERO && usdtCfg.remoteToken.toLowerCase() === t.deployed.addresses.USDT);
     t.check("fees and minimums come from the settings", nativeCfg.feeBps === BigInt(s.FEE_BPS_NATIVE) && usdtCfg.feeBps === BigInt(s.FEE_BPS_USDT) && usdtCfg.min === units(s.MIN_USDT));
-    t.check("initialize cannot run again", await reverts(() => bridge().initialize(ownerAddress, ownerAddress, REMOTE, [ USDT ], [ ZERO ], [ 0n ], [ 0n ]), "Already Initialized"));
-    const proxySelectors = new ethers.Interface(contracts.BaseProxyUsed.abi).fragments.filter((f) => f.type === "function").map((f) => f.selector);
-    const logicSelectors = new ethers.Interface(contracts.BwscBridgeEvm.abi).fragments.filter((f) => f.type === "function").map((f) => f.selector);
-    t.check("no function selector of the logic collides with the proxy's", !logicSelectors.some((x) => proxySelectors.includes(x)));
-    t.check("a stranger cannot upgrade the proxy", await reverts(() => proxy(stranger).upgradeTo(USDT), "Not admin"));
     t.check("claimDigest = the EIP-712 digest the signer signs",
         (await bridge().claimDigest(aliceAddress, USDT, 7n)) === ethers.TypedDataEncoder.hash({ name: "BwscBridge", version: "2", chainId, verifyingContract: BRIDGE }, CLAIM_TYPES, { account: aliceAddress, sourceChainId: REMOTE, token: USDT, total: 7n }));
 
@@ -142,8 +139,6 @@ export default async function (t) {
     await (await bridge(owner).setPaused(false)).wait();
     t.check("fee above 5% is refused", await reverts(() => bridge(owner).setRoute(USDT, ZERO, true, 501n, 0n), "Fee Too High"));
     t.check("the other side cannot change once coins have moved", await reverts(() => bridge(owner).setRoute(USDT, ZERO, true, 10n, 0n), "Route Is Fixed After Use"));
-    const logicAddress = await proxy().implementation();
-    t.check("the logic contract itself cannot be initialized", await reverts(() => new ethers.Contract(logicAddress, contracts.BwscBridgeEvm.abi, stranger).initialize(ownerAddress, ownerAddress, REMOTE, [ USDT ], [ ZERO ], [ 0n ], [ 0n ]), "Already Initialized"));
     t.check("a stranger cannot change the signer", await reverts(() => bridge(stranger).setSigner(ownerAddress), "Only Owner"));
     const next = new ethers.Wallet(devKey(5));
     await (await bridge(owner).setSigner(next.address)).wait();
@@ -175,15 +170,68 @@ export default async function (t) {
     const page = await bridge().getBridgeView(ZERO, 1n, 5n);
     t.check("getBridgeView pages routes (offset 1 → 2 of 3)", page.routes.length === 2 && page.routeCount === 3n);
 
-    /* ------------------------------------ upgrade keeps everything */
+    /* ------------------------------------ coins sent without addLiquidity */
 
-    const before = { total: await bridge().bridgedInOf(aliceAddress, USDT), claimed: await bridge().claimedOutOf(bobAddress, NATIVE), held: (await tokenView(NATIVE)).held };
-    const logic = await new ethers.ContractFactory(contracts.BwscBridgeEvm.abi, contracts.BwscBridgeEvm.bytecode, owner).deploy();
-    await logic.waitForDeployment();
-    await (await proxy(owner).upgradeTo(await logic.getAddress())).wait();
-    const after = { total: await bridge().bridgedInOf(aliceAddress, USDT), claimed: await bridge().claimedOutOf(bobAddress, NATIVE), held: (await tokenView(NATIVE)).held };
-    t.check("upgradeTo a new logic: totals, claims and money are the same", JSON.stringify(before, (k, x) => (typeof x === "bigint" ? `${x}` : x)) === JSON.stringify(after, (k, x) => (typeof x === "bigint" ? `${x}` : x)));
-    t.check("…and the old signatures are still refused after the upgrade", await reverts(() => bridge(bob).claimOut(bobAddress, NATIVE, units(320), sig320), "Nothing To Claim"));
+    const held0 = (await tokenView(USDT)).held;
+    await (await usdt(owner).mint(ownerAddress, units(7))).wait();
+    await (await usdt(owner).transfer(BRIDGE, units(7))).wait();
+    t.check("a plain transfer is not liquidity (held unchanged)", (await tokenView(USDT)).held === held0 && (await tokenView(USDT)).actual === held0 + units(7));
+    t.check("sendOutExtraToken: only the owner", await reverts(() => bridge(stranger).sendOutExtraToken(USDT, stranger.address), "Only Owner"));
+    t.check("sendOutExtraToken: the native coin goes through sendOutExtraNative", await reverts(() => bridge(owner).sendOutExtraToken(ZERO, ownerAddress), "Use sendOutExtraNative"));
+    const x0 = await usdt().balanceOf(bobAddress);
+    await (await bridge(owner).sendOutExtraToken(USDT, bobAddress)).wait();
+    t.check("sendOutExtraToken sends back exactly the 7 sent by mistake, held untouched", (await usdt().balanceOf(bobAddress)) - x0 === units(7) && (await tokenView(USDT)).held === held0 && (await tokenView(USDT)).actual === held0);
+    t.check("…and nothing more (the bridge's own money is never extra)", await reverts(() => bridge(owner).sendOutExtraToken(USDT, ownerAddress), "Nothing To Send"));
+
+    /* ------------------------------------ moving to a new bridge: totals come along, nobody claims twice */
+
+    const OLD = BRIDGE;
+    const old = bridge;
+    const before = {
+        aliceUsdt: await old().bridgedInOf(aliceAddress, USDT), aliceBnb: await old().bridgedInOf(aliceAddress, ZERO),
+        bobCoin: await old().claimedOutOf(bobAddress, NATIVE), bobBnb: await old().claimedOutOf(bobAddress, ZERO),
+    };
+    const routes = [ NATIVE, USDT, ZERO ];
+    const remotes = await Promise.all(routes.map(async (r) => (await old().getRoute(r)).remoteToken));
+    const deployNew = (previous, remote = REMOTE) => new ethers.ContractFactory(contracts.BwscBridgeEvm.abi, contracts.BwscBridgeEvm.bytecode, owner)
+        .deploy(ownerAddress, signerKey.address, remote, previous, routes, remotes, [ 10n, 10n, 10n ], [ 0n, 0n, 0n ]);
+    t.check("previous must be a contract", await reverts(() => deployNew(stranger.address), "Previous Is Not A Contract"));
+    t.check("previous must bridge with the same chain", await reverts(() => deployNew(OLD, 999n), "Previous Bridge Has Another Remote Chain"));
+    const fresh = await (await deployNew(OLD)).waitForDeployment();
+    const NEW = await fresh.getAddress();
+    const next2 = (who = owner) => new ethers.Contract(NEW, contracts.BwscBridgeEvm.abi, who);
+    t.check("new bridge: knows the old one, starts paused and migrating", (await next2().previousBridge()).toLowerCase() === OLD.toLowerCase() && (await next2().paused()) && (await next2().migrating()));
+    t.check("new bridge: cannot be unpaused before the migration is closed", await reverts(() => next2(owner).setPaused(false), "Close The Migration First"));
+    t.check("import is refused while the old bridge still moves", await reverts(() => next2(stranger).importAccounts([ aliceAddress ]), "Pause The Previous Bridge First"));
+    await (await old(owner).setPaused(true)).wait();
+    tx = await next2(stranger).importAccounts([ aliceAddress, bobAddress, ownerAddress ]);
+    await gas("importAccounts (3 accounts × 3 tokens)", tx);
+    const after = {
+        aliceUsdt: await next2().bridgedInOf(aliceAddress, USDT), aliceBnb: await next2().bridgedInOf(aliceAddress, ZERO),
+        bobCoin: await next2().claimedOutOf(bobAddress, NATIVE), bobBnb: await next2().claimedOutOf(bobAddress, ZERO),
+    };
+    const same = (a, b) => JSON.stringify(a, (k, x) => (typeof x === "bigint" ? `${x}` : x)) === JSON.stringify(b, (k, x) => (typeof x === "bigint" ? `${x}` : x));
+    t.check("anyone may import; every total is copied from the old contract", same(before, after) && before.bobCoin > 0n, JSON.stringify(after, (k, x) => (typeof x === "bigint" ? `${x}` : x)));
+    t.check("route totals include the imported ones (so routes stay fixed)", (await next2().getRoute(USDT)).totalBridgedIn === before.aliceUsdt && (await next2().getRoute(NATIVE)).totalClaimedOut === before.bobCoin);
+    await (await next2(stranger).importAccounts([ aliceAddress, bobAddress ])).wait();
+    t.check("importing again changes nothing", (await next2().getRoute(USDT)).totalBridgedIn === before.aliceUsdt && (await next2().claimedOutOf(bobAddress, NATIVE)) === before.bobCoin);
+    t.check("only the owner closes the migration", await reverts(() => next2(stranger).closeMigration(), "Only Owner"));
+    await (await next2(owner).closeMigration()).wait();
+    t.check("after closing: no more imports", await reverts(() => next2(stranger).importAccounts([ stranger.address ]), "No Migration Open"));
+    await (await next2(owner).setPaused(false)).wait();
+    await (await erc20(NATIVE, owner).approve(NEW, units(100))).wait();
+    await (await next2(owner).addLiquidity(NATIVE, units(100))).wait();
+    const signNew = (account, token, total) => sign(account, token, total, { verifying: NEW });
+    t.check("bob's coins already paid by the old bridge cannot be paid again", await reverts(async () => next2(bob).claimOut(bobAddress, NATIVE, before.bobCoin, await signNew(bobAddress, NATIVE, before.bobCoin)), "Nothing To Claim"));
+    t.check("a signature for the old bridge does not work on the new one", await reverts(async () => next2(bob).claimOut(bobAddress, NATIVE, before.bobCoin + units(20), await sign(bobAddress, NATIVE, before.bobCoin + units(20))), "Not Signed By The Bridge Signer"));
+    const nb0 = await erc20(NATIVE).balanceOf(bobAddress);
+    await (await next2(relayer).claimOut(bobAddress, NATIVE, before.bobCoin + units(20), await signNew(bobAddress, NATIVE, before.bobCoin + units(20)))).wait();
+    t.check("a newer total pays only the difference (20)", (await erc20(NATIVE).balanceOf(bobAddress)) - nb0 === units(20));
+    await (await usdt(alice).approve(NEW, units(10))).wait();
+    await (await next2(alice).bridgeIn(USDT, units(10))).wait();
+    t.check("alice's next bridgeIn adds to her imported total (BWSC sees one running total)", (await next2().bridgedInOf(aliceAddress, USDT)) === before.aliceUsdt + units(10) - fee(units(10), 10n));
+    await (await old(owner).setPaused(false)).wait();
+
     await (await bridge(owner).transferOwnership(await alice.getAddress())).wait();
     t.check("transferOwnership: the old owner cannot pause", await reverts(() => bridge(owner).setPaused(true), "Only Owner"));
 }

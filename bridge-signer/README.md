@@ -22,7 +22,7 @@
 | ทิศ | อ่านจาก | เซ็นให้ | relayer ส่ง (หรือผู้ใช้กดเองได้) |
 | --- | --- | --- | --- |
 | เชน EVM → BWSC | `BwscBridgeEvm.getBridgeView` บนเชนนั้น (ที่ block `finalized` หรือย้อนหลังตาม `confirmations` block) | `BwscBridge` บน BWSC | `claimIn` |
-| BWSC → เชน EVM | `BwscBridge.bridgedOutOf(chainId, account, token)` | `BwscBridgeEvm` (proxy) บนเชนนั้น | `claimOut` |
+| BWSC → เชน EVM | `BwscBridge.bridgedOutOf(chainId, account, token)` | `BwscBridgeEvm` บนเชนนั้น | `claimOut` |
 
 - ปลายทางจ่าย `ยอดที่เซ็น − ยอดที่เคลมแล้ว` จึงเซ็นยอดเดิมหรือยอดใหม่ซ้ำได้เสมอ โดยไม่มีการจ่ายซ้ำ
 - ลายเซ็นผูกกับ chain id ต้นทาง + chain id ปลายทาง + แอดเดรสของ bridge ปลายทาง

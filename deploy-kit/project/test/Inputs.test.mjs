@@ -1,7 +1,7 @@
 /*
  * YOUR CODE (tests). The deploy guide itself (deploy-kit/README.md): deploy-kit/bwsc/inputs/*.json are deployed exactly
  * the way the explorer sends them (the program file as text + that JSON, placeholders replaced, then the admin's init),
- * in the guide's order, and the BSC side the way Remix does it (coin, logic, initialize calldata, BaseProxyUsed).
+ * in the guide's order, and the BSC side the way Remix does it (coin, then the bridge with its constructor values; no proxy).
  * Then step 9 (pair, first liquidity, stake pools, bridge liquidity) and one trip over the bridge.
  * If a file in inputs/ or a step in the guide stops matching the programs, this fails.
  */
@@ -85,24 +85,20 @@ export default async function (t) {
         // Step 5: the BWSC coin as a BEP-20
         const coin = await (await factory("BwscCoinBsc").deploy("Bluewolfchain", "BWSC", units(100_000_000), wallet.address)).waitForDeployment();
         coinBsc = (await coin.getAddress()).toLowerCase();
-        // Step 6: the logic
-        const logic = await (await factory("BwscBridgeEvm").deploy()).waitForDeployment();
-        // Step 7: Remix's copy-calldata button of initialize on the logic (nothing is sent), then the proxy with it
-        const calldata = new ethers.Interface(t.bsc.contracts.BwscBridgeEvm.abi).encodeFunctionData("initialize", [
-            wallet.address, signer, hubChainId, [ coinBsc, usdOnBsc ], [ ZERO, usdt ], [ 10, 10 ], [ "1000000000000000000", "5000000000000000000" ],
-        ]);
-        const proxy = await (await factory("BaseProxyUsed").deploy(await logic.getAddress(), calldata)).waitForDeployment();
-        const bridgeBsc = new ethers.Contract(await proxy.getAddress(), t.bsc.contracts.BwscBridgeEvm.abi, wallet);
+        // Step 6: the bridge itself, no proxy: Remix's Deploy with the constructor's values (previous = 0x0, a new bridge)
+        const bridge = await (await factory("BwscBridgeEvm").deploy(
+            wallet.address, signer, hubChainId, ZERO, [ coinBsc, usdOnBsc ], [ ZERO, usdt ], [ 10, 10 ], [ "1000000000000000000", "5000000000000000000" ],
+        )).waitForDeployment();
+        const bridgeBsc = new ethers.Contract(await bridge.getAddress(), t.bsc.contracts.BwscBridgeEvm.abi, wallet);
         const list = (await bridgeBsc.tokenList()).map((a) => a.toLowerCase());
-        t.check("steps 5–7: the BSC bridge (proxy) has your owner, signer, BWSC's chain id and both coins", (await bridgeBsc.owner()) === wallet.address && (await bridgeBsc.signer()).toLowerCase() === signer
-            && (await bridgeBsc.remoteChainId()) === hubChainId && list.join() === [ coinBsc, usdOnBsc ].join());
-        t.check("step 7: the logic contract alone can never be initialized", await t.doesRevert(() => logic.initialize(wallet.address, signer, hubChainId, [], [], [], []).then((tx) => tx.wait())));
-        t.check("step 7: the proxy cannot be initialized a second time", await t.doesRevert(() => bridgeBsc.initialize(wallet.address, signer, hubChainId, [], [], [], []).then((tx) => tx.wait())));
+        t.check("steps 5–6: the BSC bridge (no proxy) has your owner, signer, BWSC's chain id and both coins, and is open", (await bridgeBsc.owner()) === wallet.address && (await bridgeBsc.signer()).toLowerCase() === signer
+            && (await bridgeBsc.remoteChainId()) === hubChainId && list.join() === [ coinBsc, usdOnBsc ].join() && !(await bridgeBsc.paused()) && !(await bridgeBsc.migrating()));
+        t.check("step 6: there is nothing to upgrade (no proxy, no initialize, no admin)", [ "initialize", "upgradeTo", "adminCall" ].every((f) => bridgeBsc.interface.getFunction(f) === null));
         // Step 9 (BSC): the BEP-20 coins go to the bridge as liquidity (approve, then addLiquidity)
-        await (await coin.approve(await proxy.getAddress(), units(1000))).wait();
+        await (await coin.approve(await bridge.getAddress(), units(1000))).wait();
         await (await bridgeBsc.addLiquidity(coinBsc, units(1000))).wait();
         t.check("step 9: BWSC on BSC added to the bridge as liquidity", (await bridgeBsc.getRoute(coinBsc)).held === units(1000));
-        bsc = { wallet, coin, usd, bridge: bridgeBsc, address: (await proxy.getAddress()).toLowerCase(), chainId: BigInt(t.bsc.anvil.chainId) };
+        bsc = { wallet, coin, usd, bridge: bridgeBsc, address: (await bridge.getAddress()).toLowerCase(), chainId: BigInt(t.bsc.anvil.chainId) };
     } else {
         t.skip("steps 5–7 (BSC)", "anvil is not installed");
     }
