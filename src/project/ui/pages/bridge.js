@@ -103,7 +103,7 @@ function summary(data = last) {
     const line = (k, v) => `<div class="flex justify-between gap-3"><dt class="text-zinc-500">${k}</dt><dd class="text-right font-mono tabular-nums text-zinc-200">${v}</dd></div>`;
     return [
         line("You receive", amount > 0n ? `${formNumber(amount - fee, side.coin.decimals, 6)} ${escapeHtml(got.coin.symbol)}` : "—"),
-        line("Bridge fee", `${feeText(side.feeBps)}${amount > 0n ? ` · ${formNumber(fee, side.coin.decimals, 6)}` : ""}`),
+        line("Bridge fee", side.feeFree ? `<span data-bridge-fee-free>None: fee-free wallet</span>` : `${feeText(side.feeBps)}${amount > 0n ? ` · ${formNumber(fee, side.coin.decimals, 6)}` : ""}`),
         line("Arrives as", escapeHtml(kindOf(got, to))),
         line("Minimum", `${formNumber(side.min, side.coin.decimals, 6)} ${escapeHtml(side.coin.symbol)}`),
         `<p class="pt-1 text-[12px] leading-relaxed text-zinc-500" data-bridge-how>${AUTO_DELIVER

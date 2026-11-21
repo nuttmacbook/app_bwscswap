@@ -180,6 +180,24 @@ export default async function (t) {
     t.check("sendOutExtraToken: the 7 USDT sent by mistake come back, to any address", sentOut.result === units(7) && (await t.read(USDT, "balanceOf", { who: bob.address })) - back === units(7));
     t.check("sendOutExtraToken: the bridge keeps exactly its own USDT", (await t.read(USDT, "balanceOf", { who: HUB })) === heldBefore);
 
+    // Fee-free wallets
+    t.check("setFeeExempt: only the owner", await t.doesRevert(() => t.send(alice, "BwscBridge", "setFeeExempt", { account: alice.address, exempt: true }), "Only the owner"));
+    t.check("setFeeExempt: the zero address is refused", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "setFeeExempt", { account: ZERO, exempt: true }), "account"));
+    const fx = await t.send(t.owner, "BwscBridge", "setFeeExempt", { account: bob.address, exempt: true });
+    t.check("setFeeExempt: FeeExemptSet event", JSON.stringify(fx.events ?? fx.logs ?? "").includes("FeeExemptSet"), JSON.stringify(fx.events ?? fx.logs ?? "").slice(0, 160));
+    t.check("isFeeExempt / getView say bob is fee-free, alice is not", (await t.read("BwscBridge", "isFeeExempt", { account: bob.address })) === true && (await view(bob.address)).feeExempt === true && (await view(alice.address)).feeExempt === false && (await view()).feeExempt === false);
+    const feesBefore = coinOf(await view(), ZERO).fees;
+    const bobBefore = await outOf(BSC, bob.address, ZERO);
+    await bridgeOut(bob, BSC, ZERO, units(10));
+    t.check("a fee-free wallet: the whole 10 is added to its total, no fee kept", (await outOf(BSC, bob.address, ZERO)) - bobBefore === units(10) && coinOf(await view(), ZERO).fees === feesBefore);
+    const aliceBefore = await outOf(BSC, alice.address, ZERO);
+    await bridgeOut(alice, BSC, ZERO, units(10));
+    t.check("…other wallets still pay the fee", (await outOf(BSC, alice.address, ZERO)) - aliceBefore === units(10) - fee(units(10), native.feeBps) && coinOf(await view(), ZERO).fees === feesBefore + fee(units(10), native.feeBps));
+    await t.send(t.owner, "BwscBridge", "setFeeExempt", { account: bob.address, exempt: false });
+    const bobAgain = await outOf(BSC, bob.address, ZERO);
+    await bridgeOut(bob, BSC, ZERO, units(10));
+    t.check("setFeeExempt false: bob pays the fee again", (await t.read("BwscBridge", "isFeeExempt", { account: bob.address })) === false && (await outOf(BSC, bob.address, ZERO)) - bobAgain === units(10) - fee(units(10), native.feeBps));
+
     await t.send(t.owner, "BwscBridge", "transferOwnership", { owner: alice.address });
     t.check("transferOwnership: the old owner cannot pause any more", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "setPaused", { paused: true }), "Only the owner"));
 }

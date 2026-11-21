@@ -183,6 +183,31 @@ export default async function (t) {
     t.check("sendOutExtraToken sends back exactly the 7 sent by mistake, held untouched", (await usdt().balanceOf(bobAddress)) - x0 === units(7) && (await tokenView(USDT)).held === held0 && (await tokenView(USDT)).actual === held0);
     t.check("…and nothing more (the bridge's own money is never extra)", await reverts(() => bridge(owner).sendOutExtraToken(USDT, ownerAddress), "Nothing To Send"));
 
+    /* ------------------------------------ fee-free wallets */
+
+    t.check("setFeeExempt: only the owner", await reverts(() => bridge(stranger).setFeeExempt(stranger.address, true), "Only Owner"));
+    t.check("setFeeExempt: the zero address is refused", await reverts(() => bridge(owner).setFeeExempt(ZERO, true), "Zero Account"));
+    const fxReceipt = await (await bridge(owner).setFeeExempt(bobAddress, true)).wait();
+    t.check("setFeeExempt: FeeExemptSet event", fxReceipt.logs.some((l) => { try { const e = bridge().interface.parseLog(l); return e?.name === "FeeExemptSet" && e.args.account === bobAddress && e.args.exempt === true; } catch { return false; } }));
+    t.check("isFeeExempt and getBridgeView say bob is fee-free, alice is not", (await bridge().isFeeExempt(bobAddress)) && !(await bridge().isFeeExempt(aliceAddress))
+        && (await bridge().getBridgeView(bobAddress, 0n, 1n)).feeExempt === true && (await bridge().getBridgeView(aliceAddress, 0n, 1n)).feeExempt === false);
+    await (await usdt(owner).mint(bobAddress, units(50))).wait();
+    await (await usdt(bob).approve(BRIDGE, units(50))).wait();
+    const fees0 = (await tokenView(USDT)).fees;
+    const bobIn0 = await bridge().bridgedInOf(bobAddress, USDT);
+    await (await bridge(bob).bridgeIn(USDT, units(50))).wait();
+    t.check("a fee-free wallet: the whole 50 is added to its total, no fee kept", (await bridge().bridgedInOf(bobAddress, USDT)) - bobIn0 === units(50) && (await tokenView(USDT)).fees === fees0);
+    await (await usdt(alice).approve(BRIDGE, units(50))).wait();
+    const aliceIn0 = await bridge().bridgedInOf(aliceAddress, USDT);
+    await (await bridge(alice).bridgeIn(USDT, units(50))).wait();
+    t.check("…other wallets still pay the fee", (await bridge().bridgedInOf(aliceAddress, USDT)) - aliceIn0 === units(50) - fee(units(50), usdtCfg.feeBps) && (await tokenView(USDT)).fees === fees0 + fee(units(50), usdtCfg.feeBps));
+    await (await bridge(owner).setFeeExempt(bobAddress, false)).wait();
+    await (await usdt(owner).mint(bobAddress, units(50))).wait();
+    await (await usdt(bob).approve(BRIDGE, units(50))).wait();
+    const bobIn1 = await bridge().bridgedInOf(bobAddress, USDT);
+    await (await bridge(bob).bridgeIn(USDT, units(50))).wait();
+    t.check("setFeeExempt false: bob pays the fee again", !(await bridge().isFeeExempt(bobAddress)) && (await bridge().bridgedInOf(bobAddress, USDT)) - bobIn1 === units(50) - fee(units(50), usdtCfg.feeBps));
+
     /* ------------------------------------ moving to a new bridge: totals come along, nobody claims twice */
 
     const OLD = BRIDGE;
@@ -212,9 +237,10 @@ export default async function (t) {
     };
     const same = (a, b) => JSON.stringify(a, (k, x) => (typeof x === "bigint" ? `${x}` : x)) === JSON.stringify(b, (k, x) => (typeof x === "bigint" ? `${x}` : x));
     t.check("anyone may import; every total is copied from the old contract", same(before, after) && before.bobCoin > 0n, JSON.stringify(after, (k, x) => (typeof x === "bigint" ? `${x}` : x)));
-    t.check("route totals include the imported ones (so routes stay fixed)", (await next2().getRoute(USDT)).totalBridgedIn === before.aliceUsdt && (await next2().getRoute(NATIVE)).totalClaimedOut === before.bobCoin);
+    const usdtIn = before.aliceUsdt + (await old().bridgedInOf(bobAddress, USDT));   // bob bridged USDT in as a fee-free wallet
+    t.check("route totals include the imported ones (so routes stay fixed)", (await next2().getRoute(USDT)).totalBridgedIn === usdtIn && (await next2().getRoute(NATIVE)).totalClaimedOut === before.bobCoin);
     await (await next2(stranger).importAccounts([ aliceAddress, bobAddress ])).wait();
-    t.check("importing again changes nothing", (await next2().getRoute(USDT)).totalBridgedIn === before.aliceUsdt && (await next2().claimedOutOf(bobAddress, NATIVE)) === before.bobCoin);
+    t.check("importing again changes nothing", (await next2().getRoute(USDT)).totalBridgedIn === usdtIn && (await next2().claimedOutOf(bobAddress, NATIVE)) === before.bobCoin);
     t.check("only the owner closes the migration", await reverts(() => next2(stranger).closeMigration(), "Only Owner"));
     await (await next2(owner).closeMigration()).wait();
     t.check("after closing: no more imports", await reverts(() => next2(stranger).importAccounts([ stranger.address ]), "No Migration Open"));

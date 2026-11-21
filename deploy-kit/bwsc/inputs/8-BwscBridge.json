@@ -14,7 +14,7 @@
       "token": "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d",
       "remoteToken": "0x55d398326f99059fF775485246999027B3197955",
       "feeBps": "75n",
-      "min": "5000000000000000000n"
+      "min": "1000000000000000000n"
     }
   ],
   "description": "BWSC bridge hub: lock and release, running totals, claims signed by the bridge signer"

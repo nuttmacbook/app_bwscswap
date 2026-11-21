@@ -321,6 +321,10 @@ async function main() {
 
             /** A read of a program by name (deploy.config) or address, straight from the chain */
             read: (nameOrAddress, fn, input = {}) => deployed.read(deployed.addresses[nameOrAddress] ?? nameOrAddress, fn, input),
+
+            /** The owner's transaction (e.g. a setting the page must show): t.send(t.owner, "BwscBridge", "setFeeExempt", { … }) */
+            owner: deployed.owner,
+            send: (signer, nameOrAddress, fn, input = {}, options = {}) => deployed.send(signer, nameOrAddress, fn, input, options),
         };
 
         try {

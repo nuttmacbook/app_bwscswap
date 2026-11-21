@@ -290,6 +290,11 @@ export const BRIDGE_EVM_ABI = [
                         "internalType": "struct BwscBridgeEvm.RouteView[]",
                         "name": "routes",
                         "type": "tuple[]"
+                    },
+                    {
+                        "internalType": "bool",
+                        "name": "feeExempt",
+                        "type": "bool"
                     }
                 ],
                 "internalType": "struct BwscBridgeEvm.BridgeView",
