@@ -37,7 +37,7 @@ export default {
         staking: "0xd76511e694ac1db3feb6e77b2f7461b81f1bb08a",      // BwscStaking: every stake pool
         limit: "0xc1dfaf06b56fb3b38f13ece2e93cb07904475b1c",        // BwscLimit: limit orders (coin for coin at your price)
         multisend: "0x3d64a25123ebd98d93f9516c980328691d287b20",    // BwscMultiSend: multi transfer (one coin to many wallets): deploy-kit/README.md step 4c
-        bridge: "0x5796f31a4196599ae3d93ce08b21977062083591",       // BwscBridge: the bridge hub
+        bridge: "0xb07a7035f9425d1a5ad897b9f5d6fa45f4a7d77e",       // BwscBridge: the bridge hub
     },
 
     /* ------------------------------------------------------------ the app directory (#/apps, the home page, the header search) */
@@ -122,7 +122,7 @@ export default {
             rpcUrl: "https://bsc-rpc.publicnode.com",
             explorerUrl: "https://bscscan.com",
             native: { symbol: "BNB", name: "BNB", decimals: 18 },
-            bridge: "0x3Bb85299a595c9B80F7dA1777a26A1dDF0105e45",
+            bridge: "0x3Ab66D165E258D0C4cFEd03B29973a74d8725DB4",
             confirmations: 20,
         },
     ],
@@ -156,7 +156,7 @@ export default {
         { chain: "bwsc", address: "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d", symbol: "USDT", name: "Tether USD", logo: "/coins/tether-256.png" },
         { chain: "bwsc", address: "0x93ade50b1d98ad2f8706e19cf5582411d8de62ca", symbol: "wBWSC", name: "Wrapped BWSC", wraps: "native" },
         { chain: "bsc", address: "0x55d398326f99059fF775485246999027B3197955", symbol: "USDT", name: "Tether USD (BSC)" },
-        { chain: "bsc", address: "0x251DbFdb9Eee5Ff3f90B337DcB8fc84E566830a5", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc-256.png" },
+        { chain: "bsc", address: "0xB4C486d1f06b54BFCd83C7e11cab93969B627785", symbol: "BWSC", name: "Bluewolfchain (BEP-20)", logo: "/coins/bwsc-256.png" },
     ],
 
     /* ------------------------------------------------------------ prices */
