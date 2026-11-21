@@ -17,7 +17,7 @@ export default async function (t) {
         t.check("docs: no reads from the chain", reads.total === 0, JSON.stringify(reads.calls));
         const links = await page.locator("[data-docs-nav] [data-docs-link]").count();
         const nav = await page.innerText("[data-docs-nav]");
-        t.check("docs: the sidebar lists every page in its group", links === 21 && [ "Getting started", "Using the apps", "Programs", "Build apps", "Reference" ].every((g) => nav.toLowerCase().includes(g.toLowerCase())), String(links));
+        t.check("docs: the sidebar lists every page in its group", links === 22 && [ "Getting started", "Using the apps", "Programs", "Build apps", "Reference" ].every((g) => nav.toLowerCase().includes(g.toLowerCase())), String(links));
 
         // Search narrows the sidebar
         await page.fill("[data-docs-search]", "event");
@@ -49,6 +49,14 @@ export default async function (t) {
         await page.waitForSelector("[data-docs='network']");
         const net = await page.innerText("[data-docs-article]");
         t.check("docs: the network page has this chain's values (RPC, chain id, symbol)", net.includes(`${t.node}/evm`) && net.includes(String(t.local.LOCAL_CHAIN_ID)) && net.includes(t.local.LOCAL_COIN_SYMBOL) && !/\{[A-Z_]+\}/.test(net));
+        // Official addresses: every program, the bridge on the other chain and the coins, from the settings
+        await page.evaluate(() => { location.hash = "#/docs?p=addresses"; });
+        await page.waitForSelector("[data-docs='addresses']");
+        const official = (await page.innerText("[data-docs-article]")).toLowerCase();
+        const want = [ "BwscDex", "BwscStaking", "BwscLimit", "BwscMultiSend", "BwscBridge" ].map((k) => t.deployed.addresses[k]).filter(Boolean);
+        t.check("docs: official addresses list every program from the settings", want.length >= 4 && want.every((a) => official.includes(a.toLowerCase())), want.filter((a) => !official.includes(a.toLowerCase())).join());
+        const bscBridge = String(t.bsc?.addresses?.BwscBridgeEvm ?? "").toLowerCase();
+        t.check("docs: official addresses have the BSC bridge and its coins", !t.bsc || (official.includes("bnb smart chain") && official.includes("bwscbridgeevm") && official.includes(bscBridge)), official.slice(official.indexOf("bnb smart chain"), official.indexOf("bnb smart chain") + 300).replace(/\s+/g, " "));
         await page.evaluate(() => { location.hash = "#/docs?p=nothing-here"; });
         await page.waitForTimeout(300);
         t.check("docs: an unknown page falls back to the introduction", (await page.getAttribute("[data-docs]", "data-docs")) === "introduction");
@@ -69,7 +77,7 @@ export default async function (t) {
     });
 
     await t.step("docs layout", async () => {
-        const problems = await t.layout([ "#/docs", "#/docs?p=first-program", "#/docs?p=http-api" ]);
+        const problems = await t.layout([ "#/docs", "#/docs?p=first-program", "#/docs?p=http-api", "#/docs?p=addresses" ]);
         t.check("layout: docs fit 320–1366 px", problems.length === 0, problems.slice(0, 3).join("; "));
     });
 

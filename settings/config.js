@@ -104,7 +104,7 @@ export default {
     // entry here. The bridge page, the wallet and the signer pick it up; no code changes.
     //   key           a short id used in `tokens` below and by the bridge signer (the same key there)
     //   short         a few letters shown on small screens (optional; the key in capitals otherwise)
-    //   bridge        the PROXY address of BwscBridgeEvm on that chain
+    //   bridge        the address of BwscBridgeEvm on that chain (no proxy)
     //   confirmations how long a deposit waits before the signer signs it: "finalized" or a number of blocks
     //                 (the same value as in bridge-signer/; shown on the bridge page)
     // Example of one more chain:
