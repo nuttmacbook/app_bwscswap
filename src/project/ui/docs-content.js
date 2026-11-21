@@ -7,7 +7,54 @@
  *   ["note", text]  ["warn", text]  ["steps", [{ title, text }…]]  ["cards", [{ title, text, href }…]]
  * Text: `code`, **bold**, [label](#/docs?p=slug or https://…).
  * {NODE} {RPC} {CHAIN_ID} {SYMBOL} {NAME} {EXPLORER} are filled in from settings/config.js.
+ * "Official addresses" is built from settings/config.js too (programs, chains[].bridge, tokens): change the addresses
+ * there, never here.
  */
+
+import { config } from "../../engine/settings";
+
+/* ------------------------------------ official addresses, from settings/config.js */
+
+const PROGRAM_NAMES = {
+    dex: [ "BwscDex", "swap and pools" ],
+    staking: [ "BwscStaking", "staking pools" ],
+    limit: [ "BwscLimit", "limit orders" ],
+    multisend: [ "BwscMultiSend", "multi transfer" ],
+    bridge: [ "BwscBridge", "bridge hub" ],
+};
+const trimUrl = (url) => String(url ?? "").replace(/\/+$/, "");
+const isAddr = (a) => /^0x[0-9a-fA-F]{40}$/.test(String(a ?? ""));
+const linked = (address, url) => (url ? `[\`${address}\`](${url})` : `\`${address}\``);
+
+function officialBlocks() {
+    const hub = config.hub ?? {};
+    const hubLink = (a) => (hub.explorerUrl ? `${trimUrl(hub.explorerUrl)}/#address/${a}` : "");
+    const native = hub.native ?? {};
+    const blocks = [
+        [ "warn", "Only the addresses on this page are official. Before you approve a token, add liquidity or send coins to a contract, check its address here. Anyone can make a token with the same name or symbol." ],
+        [ "h2", `${hub.name ?? "{NAME}"} (chain ID ${hub.chainId})` ],
+        [ "table", [ "Program", "Address" ], Object.entries(config.programs ?? {}).filter(([ , a ]) => isAddr(a)).map(([ key, a ]) => {
+            const [ name, what ] = PROGRAM_NAMES[key] ?? [ key, "" ];
+            return [ `**${name}**${what ? `: ${what}` : ""}`, linked(a, hubLink(a)) ];
+        }) ],
+        [ "table", [ "Coin", "Address" ], [
+            [ `**${native.symbol ?? "{SYMBOL}"}**: the native coin`, "No address: it is the chain's own coin (programs use `0x0000000000000000000000000000000000000000` for it)" ],
+            ...(config.tokens ?? []).filter((t) => t.chain === hub.key && isAddr(t.address)).map((t) => [ `**${t.symbol}**: ${t.name ?? ""}`, linked(t.address, hubLink(t.address)) ]),
+        ] ],
+    ];
+    for (const c of config.chains ?? []) {
+        const explorer = trimUrl(c.explorerUrl);
+        const rows = [];
+        if (isAddr(c.bridge)) rows.push([ "**BwscBridgeEvm**: bridge", linked(c.bridge, explorer ? `${explorer}/address/${c.bridge}` : "") ]);
+        for (const t of (config.tokens ?? []).filter((x) => x.chain === c.key && isAddr(x.address))) {
+            rows.push([ `**${t.symbol}**: ${t.name ?? ""}`, linked(t.address, explorer ? `${explorer}/token/${t.address}` : "") ]);
+        }
+        if (!rows.length) continue;
+        blocks.push([ "h2", `${c.name} (chain ID ${c.chainId})` ], [ "table", [ "Contract", "Address" ], rows ]);
+    }
+    blocks.push([ "note", "The bridge contracts on the other chains (BwscBridgeEvm) have no proxy: their code can never be changed. Bridged coins arrive at the same wallet address on the other chain." ]);
+    return blocks;
+}
 
 const COUNTER = `function program() {
     function initialization(params) {
@@ -87,6 +134,11 @@ const PAGES = [
             ] ],
             [ "note", "A sponsor signs the same transaction too. Apps can use it to pay the gas for people who hold no {SYMBOL} yet." ],
         ],
+    },
+    {
+        slug: "addresses", group: "Getting started", title: "Official addresses",
+        lead: "Every program and coin this site uses, on {NAME} and on the chains the bridge reaches.",
+        blocks: officialBlocks(),
     },
     {
         slug: "fees", group: "Getting started", title: "Blocks and fees",

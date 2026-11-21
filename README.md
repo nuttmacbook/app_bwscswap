@@ -20,7 +20,7 @@
 | หน้า | ทำอะไร | ใช้โปรแกรม |
 | --- | --- | --- |
 | Home (`#/`) | Landing page ของเชน: hero + โค้ดตัวอย่าง (counter.js), สถานะเชนสด (block ล่าสุด, เวลา block, base fee, chain id), ความสามารถ 8 ข้อ, ขั้นตอนสร้างแอป + โค้ด (tip-jar.js, app.js), สรุปแอปตามหมวด (ไม่แสดงรายการแอป), ค่า network / เพิ่มเชนลงกระเป๋า | node (อ่าน 1 ครั้ง) |
-| **Docs** (`#/docs?p=…`) | 21 หน้าใน 5 กลุ่ม: Getting started · Using the apps · Programs · Build apps · Reference · แถบซ้ายค้นหาได้, สารบัญด้านขวา, Previous / Next, บนมือถือเป็นเมนูพับ · ค่า RPC / chain id / สัญลักษณ์เหรียญ เติมจาก `settings/config.js` ให้เอง · แก้เนื้อหาที่ `src/project/ui/docs-content.js` | — |
+| **Docs** (`#/docs?p=…`) | 22 หน้าใน 5 กลุ่ม: Getting started · Using the apps · Programs · Build apps · Reference · แถบซ้ายค้นหาได้, สารบัญด้านขวา, Previous / Next, บนมือถือเป็นเมนูพับ · ค่า RPC / chain id / สัญลักษณ์เหรียญ เติมจาก `settings/config.js` ให้เอง · แก้เนื้อหาที่ `src/project/ui/docs-content.js` | — |
 | **Apps** (`#/apps`) | ไดเรกทอรีแอพทั้งหมดของเชน: เครื่องมือของเชน (Official) + แอพ/เกม/โปรเจคจาก `settings/config.js` → `directory` · ค้นหา (ชื่อ คำอธิบาย แท็ก), หมวดหมู่พร้อมจำนวน, เรียง Featured / Newest / A–Z, แสดงทีละ 24 · การ์ดมี badge (Core / Audited / Low-Medium-High risk / Beta / New / Coming soon) และสีตามหมวด, กรองตาม badge ได้ · กดการ์ดเข้า**หน้าแอพ** `#/app?id=…` (ภาพปก, โลโก้, รายละเอียดเต็ม, ภาพหน้าจอ, คำอธิบาย badge + ลิงก์รายงาน audit, ลิงก์โซเชียล, โปรแกรมบนเชน, ปุ่ม Open, แอพหมวดเดียวกัน) · ลิงก์ตรงหมวดได้ `#/apps?c=games` · ปุ่มค้นหาที่หัวเว็บ (หรือกด `/` , Ctrl/⌘ K) ค้นได้จากทุกหน้า | — |
 | **Swap** (`#/swap`) | แลกเหรียญทุกคู่ หาเส้นทางหลายทอด (สูงสุด 3 คู่) · พิมพ์ได้ทั้งช่อง "You pay" (exact in) และ "You get" (exact out) · ปุ่มเฟือง: slippage (ตัวเลือก + ใส่เอง) และ deadline จำไว้ในเบราว์เซอร์ · เตือน price impact ตั้งแต่ 5% และต้องกดยืนยันตั้งแต่ 15% · wrap / unwrap BWSC ↔ wBWSC 1:1 | BwscDex v2 (+ WBWSC) |
 | Pool (`#/pool`) | รายการคู่ (ค้นหา / ตัวกรอง "My positions" / แสดงทีละ 20), ฝาก / ถอนสภาพคล่อง (เลือกได้ว่าใช้ BWSC หรือ wBWSC), owner สร้างคู่ใหม่ | BwscDex |
@@ -47,6 +47,35 @@
    - ถ้าไม่เพิ่ม กระเป๋าจะเชื่อมไม่ได้
 
 ถ้ายังไม่ใส่ Project ID เว็บจะขึ้น "Setup is not finished" และบอกว่าขาดอะไร
+
+## แอดเดรสทางการ (Official addresses)
+
+ที่ใช้จริงตอนนี้ (ต้นทางคือ `settings/config.js`) หน้าเว็บ **Docs → Official addresses** (`#/docs?p=addresses`) สร้างตารางนี้จาก config เอง ถ้าเปลี่ยนแอดเดรสให้แก้ที่ config ที่เดียว แล้วอัปเดตตารางนี้ตาม
+
+**Bluewolfchain (chain id 41234)**
+
+| อะไร | แอดเดรส |
+| --- | --- |
+| BwscDex (Swap / Pools) | `0x49e79ee25dcd834fc4b32317604e702760992422` |
+| BwscStaking (Stake) | `0xd76511e694ac1db3feb6e77b2f7461b81f1bb08a` |
+| BwscLimit (Limit orders) | `0xc1dfaf06b56fb3b38f13ece2e93cb07904475b1c` |
+| BwscMultiSend (Multi transfer) | `0x3d64a25123ebd98d93f9516c980328691d287b20` |
+| BwscBridge (bridge hub) | `0xb07a7035f9425d1a5ad897b9f5d6fa45f4a7d77e` |
+| USDT | `0xf49205a9bdc40d66586e373b7f5ce4b3456c513d` |
+| wBWSC | `0x93ade50b1d98ad2f8706e19cf5582411d8de62ca` |
+| BWSC (เหรียญหลัก) | ไม่มีแอดเดรส (ในโปรแกรมใช้ `0x000…0`) |
+
+**BNB Smart Chain (chain id 56)**
+
+| อะไร | แอดเดรส |
+| --- | --- |
+| BwscBridgeEvm (bridge, ไม่มี proxy) | `0x3Ab66D165E258D0C4cFEd03B29973a74d8725DB4` |
+| BWSC (BEP-20) | `0xB4C486d1f06b54BFCd83C7e11cab93969B627785` |
+| BSC-USD (USDT) | `0x55d398326f99059fF775485246999027B3197955` |
+
+**กระเป๋า:** owner ของ bridge ทั้ง 2 ฝั่ง `0x8958e4f05d6D49D14B959f0500a1f01a900B1BfD` · bridge signer `0x5BECab804704E0e85E378478Ff52471f3f1b05A0`
+
+**เลิกใช้แล้ว ห้ามใช้:** hub `0x5796f31a4196599ae3d93ce08b21977062083591` · bridge BSC (proxy) `0x3Bb85299a595c9B80F7dA1777a26A1dDF0105e45` · BWSC BEP-20 `0x251DbFdb9Eee5Ff3f90B337DcB8fc84E566830a5`
 
 ## เหรียญ
 
