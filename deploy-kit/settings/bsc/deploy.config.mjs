@@ -2,15 +2,14 @@
  * TEST CHAIN ONLY: what the local BSC (anvil, npm run dev / npm test) deploys, in order. On BSC itself you deploy
  * by hand in Remix (deploy-kit/README.md). Values come from deploy-kit/settings/bsc/<Contract>.env as ctx.settings.<Contract>.<KEY>.
  *
- *   plain({ name, args })     a contract without a proxy (the coin)
- *   proxied({ name, init })   behind BaseProxyUsed: initialize(...) runs in the proxy's constructor
+ *   plain({ name, args })     a contract deployed as it is (no proxy), its constructor gets args
  *   when: (ctx) => boolean    skip the step when false
  *
  * ctx = { owner, deployer, settings, addresses (BSC, so far), bwsc (BWSC addresses), contracts }
  */
 
 import { ethers } from "ethers";
-import { plain, proxied } from "../../engine/bsc/deploy.mjs";
+import { plain } from "../../engine/bsc/deploy.mjs";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 const units = (text) => ethers.parseUnits(String(text), 18);
@@ -27,9 +26,10 @@ export default {
             },
         }),
 
-        proxied({
+        // The bridge: no proxy (deployed as it is, never upgradable); previous = 0x0 (a new bridge, nothing to move)
+        plain({
             name: "BwscBridgeEvm",
-            init: (ctx) => {
+            args: (ctx) => {
                 const s = ctx.settings.BwscBridgeEvm;
                 const native = s.NATIVE_TOKEN === "deploy" ? ctx.addresses.BwscCoinBsc : s.NATIVE_TOKEN;
                 if (!ethers.isAddress(native) || !ethers.isAddress(s.USDT_TOKEN)) throw new Error("BwscBridgeEvm.env: NATIVE_TOKEN and USDT_TOKEN must be addresses (or NATIVE_TOKEN=deploy).");
@@ -38,6 +38,7 @@ export default {
                     ctx.owner,
                     s.SIGNER,
                     BigInt(s.REMOTE_CHAIN_ID),
+                    ZERO,
                     [ native, s.USDT_TOKEN ],
                     [ ZERO, ctx.bwsc.USDT ],                    // remote: the BWSC native coin, USDT on BWSC
                     [ BigInt(s.FEE_BPS_NATIVE), BigInt(s.FEE_BPS_USDT) ],

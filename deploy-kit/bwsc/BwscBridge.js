@@ -24,6 +24,8 @@ function program() {
    * Money: every coin here keeps `held` = locked deposits + liquidity − paid claims − taken out. `fees` (part of held)
    * belong to the owner; claims and removeLiquidity can use held − fees. Paused = no bridging and no claims.
    * Owner: setRoute (add / change a route), add / remove liquidity, withdrawFees, setSigner, setPaused, transferOwnership.
+   * Coins sent here by a plain transfer are not liquidity (only addLiquidity counts): sendOutExtraNative and
+   * sendOutExtraToken send back what is above `held`, never the bridge's own money.
    *
    * Init input (deploy-kit/bwsc/inputs/8-BwscBridge.json): { owner, signer, routes: [{ chainId, token, remoteToken,
    *   feeBps, min }], namespace?, description? }. Amounts are bigint in the coin's smallest unit (native: 18 decimals).
@@ -48,6 +50,7 @@ function program() {
       { name: "setPaused", inputs: [{ name: "paused", type: "bool" }], outputs: [] },
       { name: "transferOwnership", inputs: [{ name: "owner", type: "address" }], outputs: [] },
       { name: "sendOutExtraNative", inputs: [{ name: "to", type: "address" }], outputs: [{ name: "amount", type: "uint" }] },
+      { name: "sendOutExtraToken", inputs: [{ name: "token", type: "address" }, { name: "to", type: "address" }], outputs: [{ name: "amount", type: "uint" }], description: "Tokens sent here by a plain transfer (not addLiquidity): the balance above what the bridge holds, back out" },
       { name: "bridgedOutOf", inputs: [{ name: "chainId", type: "uint" }, { name: "account", type: "address" }, { name: "token", type: "address" }], outputs: [{ name: "total", type: "uint" }], readonly: true },
       { name: "claimedInOf", inputs: [{ name: "chainId", type: "uint" }, { name: "account", type: "address" }, { name: "token", type: "address" }], outputs: [{ name: "total", type: "uint" }], readonly: true },
       { name: "getRoute", inputs: [{ name: "chainId", type: "uint" }, { name: "token", type: "address" }], outputs: [{ name: "route", type: "object" }], readonly: true },
@@ -63,6 +66,7 @@ function program() {
       { name: "RouteSet", fields: [{ name: "chainId", type: "uint" }, { name: "token", type: "address", indexed: true }, { name: "remoteToken", type: "address" }, { name: "enabled", type: "bool" }, { name: "feeBps", type: "uint" }, { name: "min", type: "uint" }] },
       { name: "SignerChanged", fields: [{ name: "from", type: "address" }, { name: "to", type: "address" }] },
       { name: "Paused", fields: [{ name: "paused", type: "bool" }] },
+      { name: "ExtraSentOut", fields: [{ name: "token", type: "address", indexed: true }, { name: "amount", type: "uint" }, { name: "to", type: "address" }] },
       { name: "OwnershipTransferred", fields: [{ name: "from", type: "address", indexed: true }, { name: "to", type: "address", indexed: true }] },
     ],
   }
@@ -302,7 +306,21 @@ function program() {
     const to = requireAddress(params.input.to, "to")
     const extra = ThisBalance() - heldOf(ZERO)
     if (extra <= 0n) throw new Error("Nothing to send out")
+    emit("ExtraSentOut", { token: ZERO, amount: extra, to: to }, { indexed: ["token"] })
     transferNative(to, extra)
+    return extra
+  }))
+
+  // A token sent here by a plain transfer (not addLiquidity): only the balance above `held` can leave
+  const sendOutExtraToken = onlyOwner(nonReentrant(function (params) {
+    const token = requireToken(params.input.token, "token")
+    if (token === ZERO) throw new Error("For the native coin use sendOutExtraNative")
+    const to = requireAddress(params.input.to, "to")
+    const balance = runProgram(token, "balanceOf", { who: ThisAddress() }, { readonly: true })
+    const extra = balance - heldOf(token)
+    if (extra <= 0n) throw new Error("Nothing to send out")
+    emit("ExtraSentOut", { token: token, amount: extra, to: to }, { indexed: ["token"] })
+    runProgram(token, "transfer", { to: to, amount: extra })
     return extra
   }))
 
@@ -383,5 +401,5 @@ function program() {
     }
   }
 
-  return { bridgeOut, claimIn, addLiquidity, removeLiquidity, withdrawFees, setRoute, setSigner, setPaused, transferOwnership, sendOutExtraNative, bridgedOutOf, claimedInOf, getRoute, claimDigest, getView }
+  return { bridgeOut, claimIn, addLiquidity, removeLiquidity, withdrawFees, setRoute, setSigner, setPaused, transferOwnership, sendOutExtraNative, sendOutExtraToken, bridgedOutOf, claimedInOf, getRoute, claimDigest, getView }
 }

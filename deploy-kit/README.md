@@ -18,7 +18,6 @@ deploy-kit/
 ├── bsc/                   📋 ก้อปไปวางใน Remix (https://remix.ethereum.org) แล้วดีพลอยบน BSC (ไฟล์เดิมใช้กับเชน EVM อื่นได้)
 │   ├── BwscCoinBsc.sol    BEP-20 ของเหรียญ BWSC บน BSC
 │   ├── BwscBridgeEvm.sol  bridge ฝั่งเชน EVM (logic) รองรับ token และเหรียญหลักของเชนนั้น (BNB)
-│   └── BaseProxyUsed.sol  proxy ที่ครอบ bridge
 └── engine/ project/ settings/ generated/   🧪 โค้ดชั่วคราว: เชนจำลอง, เทส, แผงทดสอบ (ไม่ต้องใช้ตอนดีพลอยจริง)
 ```
 
@@ -44,16 +43,15 @@ deploy-kit/
 
 | ขั้น | ที่ไหน | อะไร | ใช้แอดเดรสจากขั้น | แอดเดรสที่ได้ → ใส่ใน `settings/config.js` |
 | --- | --- | --- | --- | --- |
-| 0 | — | สร้างกระเป๋า **signer** ใหม่ (ใช้กับ bridge) | | ใช้ในขั้น 7, 8 · private key ใส่แค่ `bridge-signer/.env` |
-| 1 | BWSC explorer | USDT บน BWSC (`Token.js` + `inputs/1-USDT.json`) | | `tokens` (USDT, chain bwsc) · ใช้ในขั้น 7, 8 |
+| 0 | — | สร้างกระเป๋า **signer** ใหม่ (ใช้กับ bridge) | | ใช้ในขั้น 6, 8 · private key ใส่แค่ `bridge-signer/.env` |
+| 1 | BWSC explorer | USDT บน BWSC (`Token.js` + `inputs/1-USDT.json`) | | `tokens` (USDT, chain bwsc) · ใช้ในขั้น 6, 8 |
 | 2 | BWSC explorer | wBWSC (`WBWSC.js` + `inputs/2-wBWSC.json`) | | `tokens` (wBWSC) · ใช้ในขั้น 3 |
 | 3 | BWSC explorer | BwscDex (`inputs/3-BwscDex.json`) | 2 | `programs.dex` |
 | 4 | BWSC explorer | BwscStaking (`inputs/4-BwscStaking.json`) | | `programs.staking` |
 | 4b | BWSC explorer | BwscLimit: limit orders (`inputs/4b-BwscLimit.json`) | 1, 2 | `programs.limit` |
 | 4c | BWSC explorer | BwscMultiSend: multi transfer (`inputs/4c-BwscMultiSend.json`) | | `programs.multisend` |
-| 5 | Remix → BSC | BwscCoinBsc | | `tokens` (BWSC, chain bsc) · ใช้ในขั้น 7, 8 |
-| 6 | Remix → BSC | BwscBridgeEvm (logic) | | ใช้ในขั้น 7 |
-| 7 | Remix → BSC | BaseProxyUsed (proxy ของ bridge) | 0, 1, 5, 6 | `chains[bsc].bridge` |
+| 5 | Remix → BSC | BwscCoinBsc | | `tokens` (BWSC, chain bsc) · ใช้ในขั้น 6, 8 |
+| 6 | Remix → BSC | BwscBridgeEvm = bridge ฝั่ง BSC (ไม่มี proxy, ดีพลอยครั้งเดียวจบ) | 0, 1, 5 | `chains[bsc].bridge` |
 | 8 | BWSC explorer | BwscBridge (`inputs/8-BwscBridge.json`) | 0, 1, 5 | `programs.bridge` |
 | 9 | เว็บ / explorer / Remix | คู่ swap + สภาพคล่องแรก, pool stake + รางวัล, สภาพคล่อง bridge | ทั้งหมด | |
 | 10 | เซิร์ฟเวอร์ของคุณ | รัน `bridge-signer/` | 7, 8 | `bridgeSigner.url` |
@@ -66,7 +64,7 @@ deploy-kit/
 ## ขั้น 0 · กระเป๋า signer ของ bridge
 
 สร้างกระเป๋าใหม่ 1 ใบ (เช่น MetaMask → Add account) ใช้**เซ็นยอดเคลมอย่างเดียว** กระเป๋านี้ไม่ต้องมีเงิน
-- **แอดเดรส** ใส่ใน initialize ของขั้น 7 และใน input ของขั้น 8
+- **แอดเดรส** ใส่ใน constructor ของขั้น 6 และใน input ของขั้น 8
 - **private key** ใส่ใน `bridge-signer/.env` บนเซิร์ฟเวอร์ของคุณที่เดียว ใครได้ key นี้ไปจะเซ็นยอดเท่าไหร่ก็ได้
 - **กระเป๋า relayer** (แนะนำให้สร้างอีก 1 ใบ แยกจาก signer และ owner): ส่งเหรียญให้ผู้ใช้อัตโนมัติและจ่ายค่า gas · ใส่ key ใน `RELAYER_PRIVATE_KEY` แล้วเติม BWSC บน BWSC และ BNB บน BSC (ดูยอดที่ `/status`)
 
@@ -118,16 +116,16 @@ deploy-kit/
 | `8-BwscBridge.json` | `routes[].feeBps`, `min` | ค่าธรรมเนียม bridge ต่อเส้นทาง (`10n` = 0.10%, สูงสุด `500n`) และยอดโอนขั้นต่ำ |
 | ทุกไฟล์ | `namespace` (เพิ่มเองได้) | ชื่อจำง่ายบนเชน ต้องไม่ซ้ำทั้งเชน |
 
-## ขั้น 5–7 · ดีพลอยฝั่ง BSC ด้วย Remix
+## ขั้น 5–6 · ดีพลอยฝั่ง BSC ด้วย Remix
 
 แนะนำให้ลองบน **BSC Testnet (chain id 97)** ก่อน แล้วค่อยทำซ้ำบน BSC จริง (56) ดูหมายเหตุ testnet ท้ายหัวข้อนี้
 
 **ตั้ง Remix (ครั้งเดียว)**
-1. เปิด https://remix.ethereum.org สร้างไฟล์ 3 ไฟล์ชื่อเดียวกับใน `bsc/` แล้ววางโค้ดแต่ละไฟล์ทั้งไฟล์
+1. เปิด https://remix.ethereum.org สร้างไฟล์ 2 ไฟล์ชื่อเดียวกับใน `bsc/` แล้ววางโค้ดแต่ละไฟล์ทั้งไฟล์
 2. แท็บ **Solidity compiler**
    - Compiler `0.8.37`
    - Advanced configurations: **Enable optimization = 200**, **EVM version = paris**
-   - Compile ทั้ง 3 ไฟล์
+   - Compile ทั้ง 2 ไฟล์
 3. แท็บ **Deploy & run transactions**: Environment = **Injected Provider - MetaMask** (MetaMask อยู่บน BSC และมี BNB สำหรับ gas)
 
 **ขั้น 5 · BwscCoinBsc** (BWSC บน BSC, supply คงที่ ไม่มีใคร mint เพิ่มได้)
@@ -141,46 +139,60 @@ Contract: `BwscCoinBsc` → ใส่ค่า constructor แล้วกด De
 | `supply_` | จำนวนทั้งหมดในหน่วยเล็กสุด เช่น 100 ล้านเหรียญ = `100000000000000000000000000` |
 | `holder_` | กระเป๋าของคุณ (supply ทั้งหมดเข้าที่นี่ แล้วจะเติมเข้า bridge ในขั้น 9) |
 
-**ขั้น 6 · BwscBridgeEvm (logic)**
-- Contract: `BwscBridgeEvm` → Deploy (ไม่มีค่า constructor)
-- ตัว logic ถูกล็อกไว้ initialize ไม่ได้ ใช้งานผ่าน proxy เท่านั้น
+**ขั้น 6 · BwscBridgeEvm (bridge ฝั่ง BSC, ไม่มี proxy)**
 
-**ขั้น 7 · ทำ calldata ของ initialize แล้วดีพลอย proxy**
+Contract: `BwscBridgeEvm` → กดลูกศรข้างปุ่ม Deploy ให้ช่องกางออก → กรอกค่า constructor → กด **transact**
 
-1. ใน Deployed Contracts ของ logic (ขั้น 6) กดลูกศรเปิด `initialize` แล้วกรอก:
+| ช่อง | ค่า | หมายเหตุ |
+| --- | --- | --- |
+| `owner_` | กระเป๋าของคุณ | |
+| `signer_` | แอดเดรส signer (ขั้น 0) | |
+| `remoteChainId_` | `41234` | chain id ของ BWSC |
+| `previous_` | `0x0000000000000000000000000000000000000000` | bridge ใหม่ ไม่มีตัวเก่า (ถ้าย้ายจากตัวเก่า ดูหัวข้อ "ย้าย bridge ฝั่ง BSC") |
+| `tokens_` | `["<BwscCoinBsc ขั้น 5>","0x55d398326f99059fF775485246999027B3197955"]` | เหรียญบน BSC (ตัวหลังคือ BSC-USD) |
+| `remoteTokens_` | `["0x0000000000000000000000000000000000000000","<USDT บน BWSC ขั้น 1>"]` | ตัวคู่บน BWSC (0x000…0 = BWSC native) |
+| `feeBps_` | `[10,10]` | 0.10% ทั้งสองเหรียญ |
+| `mins_` | `["1000000000000000000","5000000000000000000"]` | ขั้นต่ำ 1 BWSC และ 5 USDT |
 
-   | ช่อง | ค่า | หมายเหตุ |
-   | --- | --- | --- |
-   | `owner_` | กระเป๋าของคุณ | |
-   | `signer_` | แอดเดรส signer (ขั้น 0) | |
-   | `remoteChainId_` | `41234` | chain id ของ BWSC |
-   | `tokens_` | `["<BwscCoinBsc ขั้น 5>","0x55d398326f99059fF775485246999027B3197955"]` | เหรียญบน BSC (ตัวหลังคือ BSC-USD) |
-   | `remoteTokens_` | `["0x0000000000000000000000000000000000000000","<USDT บน BWSC ขั้น 1>"]` | ตัวคู่บน BWSC (0x000…0 = BWSC native) |
-   | `feeBps_` | `[10,10]` | 0.10% ทั้งสองเหรียญ |
-   | `mins_` | `["1000000000000000000","5000000000000000000"]` | ขั้นต่ำ 1 BWSC และ 5 USDT |
-
-2. **อย่ากด transact** ให้กดปุ่ม **คัดลอก calldata** แทน
-   - คือไอคอนก้อปข้างปุ่ม transact ("Encode values of input fields & copy to clipboard")
-   - จะได้ข้อความขึ้นต้น `0x…`
-3. Contract: `BaseProxyUsed` → ใส่ค่า constructor แล้วกด Deploy
-   - `_impl`: แอดเดรส logic (ขั้น 6)
-   - `_data`: calldata ที่ก้อปมา
-
-   initialize รันตอนสร้าง proxy ในธุรกรรมเดียวกันเลย จึงไม่มีช่องให้ใครแทรก
-4. **แอดเดรส proxy นี้คือ bridge ฝั่ง BSC** ใช้แอดเดรสนี้ทุกที่ ไม่ใช่แอดเดรส logic
-5. สั่งฟังก์ชันของ bridge ใน Remix: เลือก Contract `BwscBridgeEvm` → ใส่แอดเดรส proxy ในช่อง **At Address** → กด At Address
-6. ตรวจว่า `owner()`, `signer()`, `remoteChainId()`, `tokenList()` ตรงกับที่กรอก
-7. กระเป๋าที่ดีพลอย proxy เป็น **admin ของ proxy** (อัปเกรด logic ได้ด้วย `upgradeTo`) ต้องเก็บกระเป๋านี้ให้ดีเท่ากับ owner
+- **แอดเดรสของสัญญานี้คือ bridge ฝั่ง BSC** ใช้แอดเดรสนี้ทุกที่
+- ตรวจว่า `owner()`, `signer()`, `remoteChainId()`, `tokenList()` ตรงกับที่กรอก และ `paused()` = false
+- ไม่มี proxy ไม่มี admin: **ไม่มีใครอัปเกรดหรือแก้โค้ดได้** รวมถึงคุณเอง (ผ่านเงื่อนไข audit)
+- เหรียญที่โอนเข้า bridge ตรง ๆ (ไม่ผ่าน `addLiquidity`) ไม่นับเป็นสภาพคล่อง ดึงคืนได้ด้วย `sendOutExtraToken(token, to)` / `sendOutExtraNative(to)` (เฉพาะส่วนที่เกิน ไม่แตะเงินของ bridge)
 
 **Verify บน BscScan** (ไม่บังคับ แต่ควรทำ ให้คนอื่นอ่านโค้ดได้)
 - Verify & Publish → Solidity (Single file) → compiler 0.8.37, optimization Yes 200, EVM paris → วางไฟล์ `.sol` ตัวนั้น
-- proxy: ใส่ constructor arguments (แอดเดรส logic + calldata) แล้วกด "Is this a proxy?" ให้ BscScan ผูกกับ logic
+- bridge: BscScan มักเติม constructor arguments ให้เอง ถ้าไม่ ให้ก้อป "ABI-encoded constructor arguments" จาก Remix (ส่วนท้ายของ input ตอนดีพลอย)
 
 **BSC Testnet (97)**
 - testnet ไม่มี BSC-USD ให้ดีพลอย `BwscCoinBsc` อีกตัวเป็น USDT ทดสอบ (`name_` = `Test USDT`, `symbol_` = `USDT`)
-- ใช้แอดเดรสนั้นแทน `0x55d3…7955` ทั้งใน `tokens_` (ขั้น 7) และใน `remoteToken` ของ USDT ใน `inputs/8-BwscBridge.json`
+- ใช้แอดเดรสนั้นแทน `0x55d3…7955` ทั้งใน `tokens_` (ขั้น 6) และใน `remoteToken` ของ USDT ใน `inputs/8-BwscBridge.json`
 - ใน `inputs/8-BwscBridge.json` เปลี่ยน `"56n"` เป็น `"97n"`
 - ใน `settings/config.js` ตั้ง `chains[bsc]` เป็น chainId 97 พร้อม RPC และ explorer ของ testnet
+
+## ย้าย bridge ฝั่ง BSC ไปตัวใหม่ (เช่น เลิกใช้ proxy ตามเงื่อนไข audit)
+
+bridge นับ **ยอดสะสมของแต่ละกระเป๋า** ตัวใหม่ต้องรู้ยอดของตัวเก่าด้วย ไม่งั้นคนที่เคยเคลมไปแล้วจะเคลมซ้ำได้ ตัวใหม่จึงดึงยอดจากตัวเก่าบนเชนเอง (`importAccounts`) ไม่มีใครพิมพ์ตัวเลขเองได้ ฝั่ง BWSC ไม่ต้องแก้อะไร
+
+1. **หยุดตัวเก่า:** ที่ bridge เก่า `setPaused(true)` (ฝั่ง BWSC ก็ `setPaused(true)` ระหว่างย้าย กันคนบริดออกมาระหว่างทาง)
+   - ดู "On the way" ในเว็บ / `/status` ของ signer ว่าไม่มีรายการค้าง
+2. **ดีพลอยตัวใหม่** แบบขั้น 6 แต่ `previous_` = **แอดเดรส bridge เก่า**
+   - ตัวใหม่เริ่มแบบ paused และ `migrating() = true` เปิดใช้ไม่ได้จนกว่าจะปิดการย้าย
+3. **รายชื่อกระเป๋าที่เคยใช้ตัวเก่า** (อ่านจาก event ของตัวเก่า ไม่ต้องใช้ key):
+   ```bash
+   cd deploy-kit
+   node project/bridge-accounts.mjs --old <bridge เก่า>
+   ```
+   ได้รายการ `["0x…","0x…"]` → ที่ bridge ใหม่ใน Remix สั่ง `importAccounts(<รายการนั้น>)` (เกิน ~100 กระเป๋าให้แบ่งหลายครั้ง)
+4. **เช็กว่าครบ:**
+   ```bash
+   node project/bridge-accounts.mjs --old <bridge เก่า> --new <bridge ใหม่>
+   ```
+   ต้องขึ้น `All the same` ถ้ามีบรรทัด `NOT THE SAME` ให้ import กระเป๋านั้นอีกครั้ง
+5. **ย้ายเงิน:** ที่ตัวเก่า `withdrawFees` + `removeLiquidity` ทุกเหรียญ (ทำได้ตอน paused) แล้วที่ตัวใหม่ `approve` + `addLiquidity`
+   - เหรียญที่เคยโอนเข้าตัวเก่าตรง ๆ: ถ้าตัวเก่าเป็น proxy ใช้ `adminCall` ที่ proxy ส่ง `transfer` ของ token ออกมา (เฉพาะส่วนเกิน `held`)
+6. **ปิดการย้าย:** ที่ตัวใหม่ `closeMigration()` (ย้อนกลับไม่ได้) แล้ว `setPaused(false)`
+7. **แอป:** `settings/config.js` → `chains[bsc].bridge` = แอดเดรสใหม่ แล้ว push ขึ้น main (Vercel + Railway อัปเอง) แล้วเปิดฝั่ง BWSC `setPaused(false)`
+8. ตัวเก่าปล่อย paused ไว้ตลอดไป
 
 ## ขั้น 9 · หลังดีพลอย
 
@@ -214,7 +226,7 @@ Contract: `BwscCoinBsc` → ใส่ค่า constructor แล้วกด De
   - โดยทั่วไปเติมทั้ง supply: USDT บน BWSC จะออกได้เฉพาะเมื่อมี USDT จริงถูกล็อกที่ BSC
 - **BWSC, เหรียญ native:** ที่ BwscBridge สั่ง `addLiquidity` (`{ "token": "0x0000000000000000000000000000000000000000", "amount": "…n" }`) พร้อมใส่ **Attached value**
   - Attached value ต้องเป็นจำนวนเดียวกันแต่หน่วยเป็นเหรียญเต็ม (ช่องนี้ของ explorer ใช้หน่วยเหรียญ) เช่น amount `"100000000000000000000n"` → Attached value `100`
-- **BSC:** ใน Remix ที่ `BwscCoinBsc` สั่ง `approve(<proxy ขั้น 7>, amount)` แล้วที่ bridge (At Address proxy) สั่ง `addLiquidity(<BwscCoinBsc>, amount)`
+- **BSC:** ใน Remix ที่ `BwscCoinBsc` สั่ง `approve(<bridge ขั้น 6>, amount)` แล้วที่ bridge (At Address = bridge ขั้น 6) สั่ง `addLiquidity(<BwscCoinBsc>, amount)`
   - โดยทั่วไปเติมทั้ง supply
   - BSC-USD ไม่ต้องเติมตอนเริ่ม เพราะมาจากคนที่ bridge เข้า
 
@@ -223,10 +235,10 @@ Contract: `BwscCoinBsc` → ใส่ค่า constructor แล้วกด De
 - ที่ bridge ของเชนนั้น: `setRoute(<บนเชนนั้น>, <บน BWSC>, true, fee, min)`
 - เหรียญหลักของเชนใช้ `0x0…0` ได้ทั้งสองฝั่ง (เช่น BNB ↔ wBNB บน BWSC)
 - **เชนใหม่ (เชน EVM ไหนก็ได้ เช่น Ethereum, Polygon, Arbitrum, Base):** ไม่ต้องแก้โค้ดเลย ทำตามนี้
-  1. ดีพลอย `BwscBridgeEvm` + proxy บนเชนนั้นแบบขั้น 6–7 (สัญญาตัวเดียวกับ BSC) `remoteChainId_` = chain id ของ BWSC, `signer_` = กระเป๋า signer ตัวเดิม
+  1. ดีพลอย `BwscBridgeEvm` บนเชนนั้นแบบขั้น 6 (สัญญาตัวเดียวกับ BSC) `remoteChainId_` = chain id ของ BWSC, `signer_` = กระเป๋า signer ตัวเดิม
   2. ที่ BwscBridge บน BWSC: `setRoute` ทีละเหรียญ ใส่ `chainId` ของเชนใหม่ (เช่น `"1n"` สำหรับ Ethereum)
   3. เติมสภาพคล่องฝั่งเชนใหม่ (`addLiquidity`) สำหรับเหรียญที่ต้องจ่ายออกที่นั่น
-  4. `settings/config.js` → เพิ่ม 1 รายการใน `chains` (`key`, `short`, `name`, `chainId`, `rpcUrl`, `explorerUrl`, `native`, `bridge` = proxy, `confirmations`) และเพิ่มเหรียญของเชนนั้นใน `tokens` (`chain: "<key>"`)
+  4. `settings/config.js` → เพิ่ม 1 รายการใน `chains` (`key`, `short`, `name`, `chainId`, `rpcUrl`, `explorerUrl`, `native`, `bridge` = แอดเดรสขั้น 6, `confirmations`) และเพิ่มเหรียญของเชนนั้นใน `tokens` (`chain: "<key>"`)
   5. รีสตาร์ต bridge-signer (อ่าน `chains` จากไฟล์เดียวกัน) แล้ว build เว็บใหม่
   - หน้า Bridge จะขึ้นเชนใหม่ในตัวเลือก From / To และในรายการ "Chains and coins" เอง กระเป๋า (Reown) ก็รู้จักเชนนั้นเอง
   - เชนอื่นสองเชนไม่ได้บริดตรงหากัน ทุกเชนผ่าน BWSC (hub) หน้าเว็บบอกผู้ใช้ให้บริดเข้า BWSC ก่อนแล้วค่อยออก
@@ -263,7 +275,7 @@ Contract: `BwscCoinBsc` → ใส่ค่า constructor แล้วกด De
 
 ```js
 programs: { dex: "<ขั้น 3>", staking: "<ขั้น 4>", limit: "<ขั้น 4b>", multisend: "<ขั้น 4c>", bridge: "<ขั้น 8>" },
-chains: [ { key: "bsc", ..., bridge: "<proxy ขั้น 7>" } ],
+chains: [ { key: "bsc", ..., bridge: "<bridge ขั้น 6>" } ],
 bridgeSigner: { url: "https://<เซิร์ฟเวอร์ signer>" },
 tokens: [
     { chain: "bwsc", address: "<ขั้น 1>", symbol: "USDT", ... },
@@ -296,8 +308,7 @@ prices: { unit: "USDT" },                       // ราคาทุกอย�
 | 4b | BwscLimit | |
 | 4c | BwscMultiSend | |
 | 5 | BwscCoinBsc = BWSC (BSC) | |
-| 6 | BwscBridgeEvm logic (BSC) | |
-| 7 | **proxy = bridge ฝั่ง BSC** | |
+| 6 | **BwscBridgeEvm = bridge ฝั่ง BSC** | |
 | 8 | BwscBridge | |
 
 ---
@@ -310,7 +321,7 @@ prices: { unit: "USDT" },                       // ราคาทุกอย�
 - **อำนาจของ owner และ admin**
   - owner ของ bridge ถอนสภาพคล่องได้
   - owner ของ BwscDex เปลี่ยนค่าธรรมเนียม (ไม่เกิน 1%) และ pause ได้ แต่ไม่มีทางแตะเงินใน pool
-  - admin ของ proxy ฝั่ง BSC อัปเกรด logic ได้
+  - bridge ฝั่ง BSC ไม่มี proxy ไม่มี admin: ไม่มีใครอัปเกรดได้
   - ควรใช้กระเป๋าที่ปลอดภัย (hardware wallet / multisig)
 - **ถ้าสงสัยว่า key ของ signer หลุด:** `setPaused(true)` ทุกฝั่งทันที → `setSigner(ใหม่)` ทุกฝั่ง → แล้วค่อยเปิดใหม่
 - **กฎหมาย:** การรับและส่งเงินจริงข้ามเชนอาจต้องมีใบอนุญาตตามกฎหมายของแต่ละประเทศ ตรวจก่อนเปิดใช้จริง

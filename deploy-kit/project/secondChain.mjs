@@ -10,7 +10,7 @@
 
 import { ethers } from "ethers";
 import { startAnvil } from "../engine/bsc/anvil.mjs";
-import { proxied, runBscStep } from "../engine/bsc/deploy.mjs";
+import { plain, runBscStep } from "../engine/bsc/deploy.mjs";
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 const units = (x) => ethers.parseUnits(String(x), 18);
@@ -32,9 +32,9 @@ async function startSecondChain({ deployed, bsc, local, signerAddress, port = Nu
 
     // Its bridge, routed to BWSC: the BWSC coin ↔ BWSC's native coin, USDT ↔ USDT on BWSC
     const ctx = { owner, contracts };
-    const step = proxied({
+    const step = plain({
         name: "BwscBridgeEvm",
-        init: () => [ owner, signerAddress, BigInt(local.LOCAL_CHAIN_ID), [ coin, usdt ], [ ZERO, deployed.addresses.USDT ], [ 10n, 10n ], [ units(1), units(5) ] ],
+        args: () => [ owner, signerAddress, BigInt(local.LOCAL_CHAIN_ID), ZERO, [ coin, usdt ], [ ZERO, deployed.addresses.USDT ], [ 10n, 10n ], [ units(1), units(5) ] ],
     });
     const bridge = (await runBscStep(step, { wallet: deployer, contracts, ctx })).address;
 

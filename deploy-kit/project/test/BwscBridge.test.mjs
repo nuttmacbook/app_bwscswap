@@ -168,6 +168,18 @@ export default async function (t) {
     t.check("getView pages routes (offset 1, limit 2)", page.routes.length === 2 && page.routeCount === 4n);
     t.check("sendOutExtraNative: no stray coins → nothing to send (the liquidity is never counted)", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "sendOutExtraNative", { to: t.owner.address }), "Nothing to send out"));
 
+    // USDT sent by a plain transfer (not addLiquidity): only that part can be sent back out
+    const HUB = t.deployed.addresses.BwscBridge;
+    const heldBefore = await t.read(USDT, "balanceOf", { who: HUB });
+    t.check("sendOutExtraToken: nothing stray → nothing to send (liquidity and fees stay)", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "sendOutExtraToken", { token: USDT, to: t.owner.address }), "Nothing to send out"));
+    await t.send(t.owner, USDT, "transfer", { to: HUB, amount: units(7) });
+    t.check("sendOutExtraToken: only the owner", await t.doesRevert(() => t.send(alice, "BwscBridge", "sendOutExtraToken", { token: USDT, to: alice.address }), "Only the owner"));
+    t.check("sendOutExtraToken: the native coin goes through sendOutExtraNative", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "sendOutExtraToken", { token: ZERO, to: t.owner.address }), "sendOutExtraNative"));
+    const back = await t.read(USDT, "balanceOf", { who: bob.address });
+    const sentOut = await t.send(t.owner, "BwscBridge", "sendOutExtraToken", { token: USDT, to: bob.address });
+    t.check("sendOutExtraToken: the 7 USDT sent by mistake come back, to any address", sentOut.result === units(7) && (await t.read(USDT, "balanceOf", { who: bob.address })) - back === units(7));
+    t.check("sendOutExtraToken: the bridge keeps exactly its own USDT", (await t.read(USDT, "balanceOf", { who: HUB })) === heldBefore);
+
     await t.send(t.owner, "BwscBridge", "transferOwnership", { owner: alice.address });
     t.check("transferOwnership: the old owner cannot pause any more", await t.doesRevert(() => t.send(t.owner, "BwscBridge", "setPaused", { paused: true }), "Only the owner"));
 }

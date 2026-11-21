@@ -3,14 +3,14 @@
  *
  * Deploy steps for the BSC side, on the local test BSC (anvil):
  *   proxied({ name, init })  logic, then BaseProxyUsed(logic, initialize(...)) in one transaction; admin → owner
- *   plain({ name, args })    a contract without a proxy (a token)
+ *   plain({ name, args })    a contract deployed as it is (no proxy); readBack / check work too
  * ctx = { owner, deployer, settings, addresses (BSC so far), bwsc (BWSC addresses) }
  */
 
 import { ethers } from "ethers";
 
 const proxied = ({ name, init, readBack, check, when }) => ({ kind: "proxied", key: name, build: name, init, readBack, check, when });
-const plain = ({ name, key, args, when }) => ({ kind: "plain", key: key ?? name, build: name, args, when });
+const plain = ({ name, key, args, readBack, check, when }) => ({ kind: "plain", key: key ?? name, build: name, args, readBack, check, when });
 
 /** Deploys one step → { address, implementation?, txs } */
 async function runBscStep(step, { wallet, contracts, ctx }) {
@@ -40,9 +40,9 @@ async function runBscStep(step, { wallet, contracts, ctx }) {
     return { address: address.toLowerCase(), implementation: logicAddress.toLowerCase(), txs };
 }
 
-/** Reads a proxied contract back and runs the step's check → true or what is wrong */
+/** Reads a deployed contract back and runs the step's check → true or what is wrong */
 async function verifyBscStep(step, address, { provider, contracts, ctx }) {
-    if (step.kind !== "proxied" || !step.readBack) return true;
+    if (!step.readBack) return true;
     const contract = new ethers.Contract(address, contracts[step.build].abi, provider);
     const state = await step.readBack(contract, ctx);
     return step.check ? step.check(state, ctx) : true;
