@@ -153,8 +153,8 @@ export default {
             coin: "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d",   // USDT on BWSC
             minIn: "1",            // at least 1 USDT
             belowBalance: "5",     // wallets with less than 5 BWSC
-            perWalletPerDay: 3,    // approve + swap count as 2
-            perDay: 300,
+            perWalletPerDay: 10,   // approve + swap count as 2
+            perDay: 500,
         },
     },
 
