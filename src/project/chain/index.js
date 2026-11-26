@@ -5,7 +5,7 @@
  */
 
 // Exchange: every pair in one program (read 100 at a time), routes, swaps, wrap / unwrap, liquidity, new pairs
-export { getDexData, coinIn, pairFor, bestRoute, bestRouteOut, swapCoins, addLiquidity, removeLiquidity, createPair } from "./dex";
+export { getDexData, coinIn, pairFor, bestRoute, bestRouteOut, swapCoins, addLiquidity, removeLiquidity, createPair, freeGasFor } from "./dex";
 
 // Staking: every pool (read 100 at a time); stake / take out / claim; owner: new pool, add reward
 export { getStakeData, pendingAt, stakeTokens, claimStake, addStakeReward, createStakePool } from "./staking";

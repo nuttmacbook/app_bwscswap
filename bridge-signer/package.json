@@ -4,7 +4,8 @@
     "type": "module",
     "description": "Signs bridge claim totals (BWSC <-> every chain in settings). Run on a server you control.",
     "scripts": {
-        "start": "node src/main.mjs"
+        "start": "node src/main.mjs",
+        "test": "node --test test/sponsor.test.mjs"
     },
     "engines": {
         "node": ">=20"

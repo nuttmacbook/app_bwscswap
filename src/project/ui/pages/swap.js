@@ -10,7 +10,7 @@
  */
 
 import { icon } from "../icons";
-import { bestRoute, bestRouteOut, coinIn, withSlippage, withSlippageUp } from "../../chain";
+import { bestRoute, bestRouteOut, coinIn, withSlippage, withSlippageUp, freeGasFor } from "../../chain";
 import { formNumber, escapeHtml, toUnits, fromUnits, shortAmount } from "../../../engine/ui/helpers";
 import { SLIPPAGE_CHOICES, MIN_DEADLINE_MINUTES, MAX_DEADLINE_MINUTES } from "../options";
 import { tradeSettings, setSlippage, setDeadline, slippageWarning } from "../swapSettings";
@@ -108,6 +108,11 @@ function liveParts(data = last) {
     }
     const fees = route.pairs.map((p) => feeText(p.feeBps)).join(" + ");
     const ready = form.mode === "out" ? amountOut > 0n && amountIn > 0n : amountIn > 0n && amountOut > 0n;
+    // Free gas (chain/gasSponsor.js): a wallet nearly out of BWSC buying BWSC with enough USDT
+    const free = freeGasFor(data, from.address, to.address, amountIn);
+    const gas = free.free
+        ? row("Network fee", `<span data-swap-free-gas>Free: paid by Bluewolfchain</span>`, "text-emerald-300")
+        : free.reason === "min" ? row("Network fee", `<span data-swap-free-gas-min>Free from ${formNumber(free.minIn, from.decimals, 2)} ${escapeHtml(free.symbol)}</span>`, "text-zinc-400") : "";
     const warn = route.impactBps >= WARN_IMPACT_BPS
         ? /*html*/`<p class="rounded-xl border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-[12px] text-rose-100" role="alert" data-impact-warning>Large price impact (${(route.impactBps / 100).toFixed(2)}%): this trade moves the price a lot. Consider a smaller amount.</p>`
         : "";
@@ -122,6 +127,7 @@ function liveParts(data = last) {
                 ? row("You pay at most", `${formNumber(limit, from.decimals, 6)} ${escapeHtml(from.symbol)}`, "text-white")
                 : row("You get at least", `${formNumber(limit, to.decimals, 6)} ${escapeHtml(to.symbol)}`, "text-white"),
             row("Slippage · deadline", `${pct(slippageBps)} · ${deadlineMinutes} min`),
+            gas,
             warn,
         ].join("") : /*html*/`<p class="text-zinc-500">${rateText(data, from, to)} · ${route.hops > 1 ? `via ${routeText(route)}` : `fee ${fees}`}</p>`,
         button,
