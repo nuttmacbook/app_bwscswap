@@ -144,6 +144,18 @@ export default {
         // of another coin (e.g. USDT in from BSC), so a brand-new wallet can pay its first gas. Whole coins per chain
         // key; "0" = off. The relayer wallet pays it: keep the bridge minimum (`min` of each route) well above it.
         gasDrop: { bwsc: "5", bsc: "0" },
+        // Free gas for buying BWSC: when a wallet holds less than `belowBalance` BWSC and swaps at least `minIn` of `coin`
+        // for BWSC on the Swap page (the direct coin → BWSC pair only), the relayer wallet pays the gas of the swap
+        // and of its approval. At most `perWalletPerDay` sponsored transactions per wallet and `perDay` in all, per UTC day.
+        // enabled: false = off (people then need a little BWSC for gas, as on any chain).
+        gasSponsor: {
+            enabled: true,
+            coin: "0xf49205a9bdc40d66586e373b7f5ce4b3456c513d",   // USDT on BWSC
+            minIn: "1",            // at least 1 USDT
+            belowBalance: "5",     // wallets with less than 5 BWSC
+            perWalletPerDay: 3,    // approve + swap count as 2
+            perDay: 300,
+        },
     },
 
     /* ------------------------------------------------------------ coins */

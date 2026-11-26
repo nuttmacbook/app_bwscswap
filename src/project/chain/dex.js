@@ -16,6 +16,7 @@ import { config, ZERO } from "../../engine/settings";
 import { DexProgram, wrappedProgramAt } from "./programs";
 import { HUB, coinOf, nativeCoin, byListOrder } from "./coins";
 import { amountOut, amountIn as amountInFor, withSlippage, withSlippageUp } from "./pricing";
+import { freeGasFor, sponsoredSigner } from "./gasSponsor";
 
 const PAGE = 100n;
 const BPS = 10_000n;
@@ -258,6 +259,10 @@ async function swapCoins(wallet, { from, to, mode = "in", amountIn = 0n, amountO
     if (route.tooMuch) throw new Error("The pools do not hold that much. Ask for less.");
     if (route.out === 0n) throw new Error("The amount is too small to swap.");
     const deadline = deadlineOf(data, deadlineMinutes);
+    // Free gas (gasSponsor.js): a wallet nearly out of BWSC buying BWSC with USDT, on the direct pair
+    const paying = mode === "out" ? route.in : amountIn;
+    const free = freeGasFor(data, from, to, paying);
+    if (free.free) return sponsoredSwap(wallet, data, { coin, pair: free.pair, mode, amountIn, wanted, slippageBps, deadline }, onStep);
     const dexProgram = () => box.createProgram(DexProgram, wallet.signer);
     if (mode === "out") {
         // Pay at most the quote + slippage, but never more than the wallet can spend
@@ -277,6 +282,35 @@ async function swapCoins(wallet, { from, to, mode = "in", amountIn = 0n, amountO
     if (needsApprove) await approveIfNeeded({ wallet, token: coin.address, spender: DexProgram.address, amount: amountIn, allowance: coin.allowance, onStep, index: 1, total });
     return sendTx(onStep, "swap", total, total, () => dexProgram().swap(
         { path: route.path, amountIn: `${amountIn}n`, minOut: `${minOut}n`, deadline: `${deadline}n` }, coin.isNative ? { value: String(amountIn) } : {}), "The swap did not go through.");
+}
+
+/**
+ * The same swap with the gas paid by the relayer: always exact in on the direct coin → BWSC pair (what the signer
+ * sponsors). "You get" amounts become the amount to pay for them, with the slippage on what comes out.
+ */
+async function sponsoredSwap(wallet, data, { coin, pair, mode, amountIn, wanted, slippageBps, deadline }, onStep) {
+    const step = stepOf(pair, coin.address);
+    const pay = mode === "out" ? amountInFor(wanted, step.rIn, step.rOut, step.feeBps) : amountIn;
+    if (pay === null) throw new Error("The pool does not hold that much. Ask for less.");
+    if (pay > coin.balance) throw new Error(`Not enough ${coin.symbol} in your wallet.`);
+    const out = mode === "out" ? wanted : amountOut(pay, step.rIn, step.rOut, step.feeBps);
+    const minOut = withSlippage(out, slippageBps);
+    const { signer, sponsor } = await sponsoredSigner(wallet);
+    const needsApprove = coin.allowance < pay;
+    const total = needsApprove ? 2 : 1;
+    if (needsApprove) {
+        const token = box.tokenAt(coin.address);
+        onStep({ stage: "approve", index: 1, total, free: true });
+        try {
+            const tx = await box.createProgram(token, signer).approve({ spender: DexProgram.address, amount: `${pay}n` }, { sponsor });
+            onStep({ stage: "approving", index: 1, total, free: true });
+            await tx.wait();
+        } catch (error) {
+            throw normalize(error, box.handleTxError(token, error), "Approval failed. Please try again.");
+        }
+    }
+    return sendTx(onStep, "swap", total, total, () => box.createProgram(DexProgram, signer).swap(
+        { path: [ coin.address, ZERO ], amountIn: `${pay}n`, minOut: `${minOut}n`, deadline: `${deadline}n` }, { sponsor }), "The swap did not go through.");
 }
 
 /**
@@ -340,4 +374,4 @@ async function createPair(wallet, { tokenA, tokenB, feeBps }, { onStep = () => {
     }), "The pair was not created.");
 }
 
-export { getDexData, coinIn, pairFor, bestRoute, bestRouteOut, swapCoins, addLiquidity, removeLiquidity, createPair, GAS_RESERVE };
+export { getDexData, coinIn, pairFor, bestRoute, bestRouteOut, swapCoins, addLiquidity, removeLiquidity, createPair, GAS_RESERVE, freeGasFor };

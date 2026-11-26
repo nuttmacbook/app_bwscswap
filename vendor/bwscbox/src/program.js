@@ -23,16 +23,19 @@ export const tokenAt = (address) => ({
 
 const known = (program, method) => !Array.isArray(program?.functions) || program.functions.includes(method);
 
-/** Transactions: every listed function becomes (input, { value, gasLimit }) → { hash, wait() } */
+/**
+ * Transactions: every listed function becomes (input, { value, gasLimit, sponsor }) → { hash, wait() }
+ * sponsor (optional) = { address, signTransaction(tx) } of a wallet that pays the gas instead (client.send)
+ */
 export function createProgram(client, program, signer) {
     if (!program?.address) throw new Error(`bwscbox: ${program?.name ?? "program"} has no address`);
     return new Proxy({}, {
         get: (_, method) => {
             if (typeof method !== "string" || method === "then") return undefined;
             if (!known(program, method)) throw new Error(`bwscbox: ${program.name} has no function ${method}`);
-            return async (input = {}, { value = "0", gasLimit } = {}) => {
+            return async (input = {}, { value = "0", gasLimit, sponsor } = {}) => {
                 if (!signer?.signTransaction) throw new Error("Wallet is not connected.");
-                const sent = await client.send({ action: "call", to: program.address, method, input, value: String(value), ...(gasLimit ? { gasLimit } : {}) }, signer);
+                const sent = await client.send({ action: "call", to: program.address, method, input, value: String(value), ...(gasLimit ? { gasLimit } : {}) }, signer, sponsor ? { sponsor } : {});
                 return { ...sent, wait: (options) => client.waitReceipt(sent.hash, options) };
             };
         },

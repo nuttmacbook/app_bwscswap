@@ -15,7 +15,8 @@ import { createClient } from "bwscbox";
 import { createBridgeSigner } from "./signer.mjs";
 import { createSignerServer } from "./http.mjs";
 import { createRelayer } from "./relayer.mjs";
-import { keyWalletSigner } from "bwscbox";
+import { createGasSponsor } from "./sponsor.mjs";
+import { keyWalletSigner, typedData } from "bwscbox";
 
 const DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const envFile = path.join(DIR, ".env");
@@ -87,4 +88,31 @@ if (config.bridgeSigner?.autoDeliver !== false) {
 } else {
     console.log("Automatic delivery is off (bridgeSigner.autoDeliver: false): users claim themselves.");
 }
-createSignerServer(signer, { allowOrigin, trustProxy: env.TRUST_PROXY === "true", relayer }).listen(Number(env.PORT), () => console.log(`Listening on port ${env.PORT} (website: ${allowOrigin})`));
+// Gas sponsor (settings/config.js bridgeSigner.gasSponsor): the relayer wallet pays the gas when a wallet that is
+// (nearly) out of BWSC swaps USDT for BWSC
+let sponsor = null;
+const gs = config.bridgeSigner?.gasSponsor;
+if (gs?.enabled) {
+    if (!config.programs?.dex || !gs.coin) {
+        console.error("✖ bridgeSigner.gasSponsor needs programs.dex and gasSponsor.coin.");
+        process.exit(1);
+    }
+    const node = createClient({ node: config.hub.nodeUrl });
+    const decimals = Number(await node.query({ program: String(gs.coin).toLowerCase(), method: "decimals" }).catch(() => 18n));
+    const units = (value, d, name) => {
+        try { return ethers.parseUnits(String(value), d); } catch { console.error(`✖ bridgeSigner.gasSponsor.${name} is ${JSON.stringify(value)}, not an amount.`); process.exit(1); }
+    };
+    sponsor = createGasSponsor({ ethers, createClient, keyWalletSigner, typedData }, {
+        key: env.RELAYER_PRIVATE_KEY || env.SIGNER_PRIVATE_KEY,
+        nodeUrl: config.hub.nodeUrl,
+        dex: config.programs.dex,
+        coin: gs.coin,
+        minIn: units(gs.minIn ?? "1", decimals, "minIn"),
+        belowBalance: units(gs.belowBalance ?? "5", config.hub?.native?.decimals ?? 18, "belowBalance"),
+        perWalletPerDay: gs.perWalletPerDay,
+        perDay: gs.perDay,
+    });
+    const i = sponsor.info();
+    console.log(`Gas sponsor ${i.sponsor}: swaps of at least ${gs.minIn ?? "1"} of ${i.coin} for BWSC, wallets below ${gs.belowBalance ?? "5"} BWSC, ${i.perWalletPerDay}/wallet/day, ${i.perDay}/day`);
+}
+createSignerServer(signer, { allowOrigin, trustProxy: env.TRUST_PROXY === "true", relayer, sponsor }).listen(Number(env.PORT), () => console.log(`Listening on port ${env.PORT} (website: ${allowOrigin})`));

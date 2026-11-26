@@ -7,6 +7,8 @@
  *   GET /deliver?from=bsc&to=bwsc&account=0x…&token=0x…[&block=N]   the website, right after a transfer: deliver it now
  *                                                     (block = the deposit's block on the source chain) → { queued }
  *   GET /pending?account=0x…                          → deliveries still on their way for that account
+ *   GET /sponsor                                      → the gas sponsor's rules (sponsor.mjs), or 404 when it is off
+ *   POST /sponsor  { tx, signature }                  → { sponsor, sponsorSignature }: the relayer pays this swap's gas
  *
  * CORS: only the website (settings/config.js app.siteUrl) may call it from a browser. A small per-IP limit keeps the RPCs calm.
  * Behind a reverse proxy (nginx, a load balancer) set trustProxy so the limit counts the caller, not the proxy.
@@ -14,7 +16,24 @@
 
 import http from "node:http";
 
-function createSignerServer(signer, { allowOrigin = "*", perMinute = 60, trustProxy = false, relayer = null } = {}) {
+/** The JSON body of a POST (at most 32 KB) */
+function readJson(request) {
+    return new Promise((resolve, reject) => {
+        let size = 0;
+        const chunks = [];
+        request.on("data", (c) => {
+            size += c.length;
+            if (size > 32_768) { reject(Object.assign(new Error("The request is too large."), { status: 413 })); request.destroy(); return; }
+            chunks.push(c);
+        });
+        request.on("end", () => {
+            try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}")); } catch { reject(Object.assign(new Error("Send JSON."), { status: 400 })); }
+        });
+        request.on("error", reject);
+    });
+}
+
+function createSignerServer(signer, { allowOrigin = "*", perMinute = 60, trustProxy = false, relayer = null, sponsor = null } = {}) {
     const hits = new Map();
     // Old entries go away, so the map never grows without end
     const sweeper = setInterval(() => {
@@ -32,15 +51,20 @@ function createSignerServer(signer, { allowOrigin = "*", perMinute = 60, trustPr
     const server = http.createServer(async (request, response) => {
         const origin = request.headers.origin ?? "";
         const allowed = allowOrigin === "*" || allowOrigin.split(",").map((o) => o.trim()).includes(origin);
-        const headers = { "content-type": "application/json", "cache-control": "no-store", ...(allowed && origin ? { "access-control-allow-origin": origin, vary: "Origin" } : {}) };
+        const headers = { "content-type": "application/json", "cache-control": "no-store", ...(allowed && origin ? { "access-control-allow-origin": origin, "access-control-allow-methods": "GET, POST", "access-control-allow-headers": "content-type", vary: "Origin" } : {}) };
         const send = (status, body) => { response.writeHead(status, headers); response.end(JSON.stringify(body)); };
         if (request.method === "OPTIONS") return send(204, {});
-        if (request.method !== "GET") return send(405, { error: "Use GET" });
+        const url = new URL(request.url, "http://signer");
+        if (request.method !== "GET" && !(request.method === "POST" && url.pathname === "/sponsor")) return send(405, { error: "Use GET (POST only for /sponsor)." });
         const forwarded = trustProxy ? String(request.headers["x-forwarded-for"] ?? "").split(",")[0].trim() : "";
         const ip = forwarded || request.socket.remoteAddress || "";
         if (limited(ip)) return send(429, { error: "Too many requests, try again in a minute." });
-        const url = new URL(request.url, "http://signer");
         try {
+            if (url.pathname === "/sponsor") {
+                if (!sponsor) return send(404, { error: "The gas sponsor is off on this signer." });
+                if (request.method === "GET") return send(200, sponsor.info());
+                return send(200, await sponsor.sign(await readJson(request)));
+            }
             if (url.pathname === "/status") return send(200, { ...(await signer.status()), relayer: relayer ? await relayer.status() : null });
             if (url.pathname === "/deliver") {
                 if (!relayer) return send(404, { error: "Automatic delivery is off on this signer." });
@@ -55,7 +79,7 @@ function createSignerServer(signer, { allowOrigin = "*", perMinute = 60, trustPr
                 const q = Object.fromEntries(url.searchParams);
                 return send(200, await signer.claim({ from: q.from, to: q.to, account: q.account, token: q.token }));
             }
-            return send(404, { error: "Not found. Use /claim, /deliver, /pending or /status." });
+            return send(404, { error: "Not found. Use /claim, /deliver, /pending, /sponsor or /status." });
         } catch (error) {
             const status = error.status ?? 502;
             if (status >= 500) console.error(error);

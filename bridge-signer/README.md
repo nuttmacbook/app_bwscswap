@@ -27,13 +27,29 @@
 - ปลายทางจ่าย `ยอดที่เซ็น − ยอดที่เคลมแล้ว` จึงเซ็นยอดเดิมหรือยอดใหม่ซ้ำได้เสมอ โดยไม่มีการจ่ายซ้ำ
 - ลายเซ็นผูกกับ chain id ต้นทาง + chain id ปลายทาง + แอดเดรสของ bridge ปลายทาง
 
+## จ่ายค่าแก๊สให้คนซื้อ BWSC (gas sponsor)
+
+กระเป๋าที่ BWSC หมดจะจ่ายค่าแก๊สไม่ได้ เลยแลก USDT กลับเป็น BWSC เองไม่ได้ เชนนี้มีช่อง `sponsor` ในธุรกรรมให้อีกกระเป๋าจ่ายแก๊สแทน: ผู้ใช้เซ็นตามปกติ, กระเป๋า relayer เซ็นธุรกรรมเดียวกันในฐานะคนจ่ายแก๊ส, node คิดค่าแก๊สกับ relayer (`src/sponsor.mjs`)
+
+relayer จ่ายให้**เฉพาะ**:
+- `swap` บน BwscDex ที่ path เป็น `[USDT, BWSC]` ตรง ๆ (คู่เดียว) จ่าย USDT อย่างน้อย `minIn` และเหรียญเข้ากระเป๋าคนเซ็นเอง
+- `approve` USDT ให้ BwscDex (ขั้นก่อน swap) อย่างน้อย `minIn`
+- กระเป๋าที่มี BWSC **น้อยกว่า** `belowBalance` ตอนนั้น (อ่านจากเชน)
+- ลายเซ็นผู้ใช้ถูกต้อง, ไม่ส่งเหรียญ (value 0), ไม่มีทิป, แก๊สไม่เกิน 600,000 และราคาแก๊สไม่เกิน 3 เท่า base fee
+- กระเป๋าละไม่เกิน `perWalletPerDay` ครั้งต่อวัน (UTC, approve นับ 1 swap นับ 1) และทั้งหมดไม่เกิน `perDay` ครั้งต่อวัน (นับในหน่วยความจำ รีสตาร์ตแล้วเริ่มนับใหม่)
+
+ตั้งที่ `settings/config.js` → `bridgeSigner.gasSponsor` (`enabled: false` = ปิด) · หน้า Swap ขึ้น "Network fee: Free: paid by Bluewolfchain" เมื่อเข้าเงื่อนไข · เงินค่าแก๊สมาจากกระเป๋า relayer (BWSC บนเชน BWSC)
+
+API: `GET /sponsor` → กติกา + แอดเดรสผู้จ่าย · `POST /sponsor { tx, signature }` → `{ sponsor, sponsorSignature }` (หน้าเว็บส่งธุรกรรมต่อให้ node เอง)
+
 ## ใช้งาน
 
 ```bash
 cd bridge-signer
 npm install
 cp .env.example .env     # ใส่ SIGNER_PRIVATE_KEY (และ RELAYER_PRIVATE_KEY ถ้าแยกกระเป๋าจ่าย gas)
-npm start                # GET /claim  /deliver  /pending?account=  /status
+npm start                # GET /claim  /deliver  /pending?account=  /status  /sponsor · POST /sponsor
+npm test                 # กติกาของ gas sponsor (test/sponsor.test.mjs)
 ```
 
 **รันบนเครื่องตัวเอง (localhost) คู่กับเว็บ `npm run dev`:** ใส่ `ALLOW_ORIGINS=http://localhost:5173` ใน `.env` และตั้ง `bridgeSigner.url: "http://localhost:8790"` ใน `settings/config.js` (ตอนขึ้นจริงเปลี่ยนกลับเป็น URL https ของเซิร์ฟเวอร์ และลบ `ALLOW_ORIGINS`)
